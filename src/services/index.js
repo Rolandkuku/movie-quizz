@@ -1,27 +1,55 @@
-// @flow
 import axios from "axios";
-import type { Movie } from "../types/";
 import { BASE_TMDB_URL, TMDB_API_KEY } from "../config/constants";
+import { getRandomInt } from "../utils";
 
-function getRandomInt(max) {
-  return Math.floor(Math.random() * Math.floor(max));
+const buildGet = async url =>
+  axios.get(
+    `${BASE_TMDB_URL}${url}${
+      url.indexOf("?") === -1 ? "?" : "&"
+    }api_key=${TMDB_API_KEY}`
+  );
+
+async function getRandPopularMovie() {
+  try {
+    // Getting a random popular movie from the 5 firs pages.
+    const popularMovies = await buildGet(
+      `movie/popular?page=${getRandomInt(5) + 1}`
+    );
+    const results = popularMovies.data.results;
+    const movie = results[getRandomInt(results.length)];
+    movie.cast = [];
+    // Adding cast ids
+    const credits = await buildGet(`movie/${movie.id}/credits`);
+    const cast = credits.data.cast;
+    for (let person of cast) {
+      movie.cast.push(person.id);
+    }
+    return movie;
+  } catch (error) {
+    throw new Error(error);
+  }
 }
 
-const appendKey = url =>
-  `${url}${url.indexOf("?") === -1 ? "?" : "&"}api_key=${TMDB_API_KEY}`;
-
-async function getRandPopularMovie(): Promise<Movie> {
+async function getRandPopularPerson() {
   try {
-    const popularMovies = await axios.get(
-      appendKey(`${BASE_TMDB_URL}movie/popular?page=${getRandomInt(5) + 1}`)
+    // Getting a random popular person from the 5 firs pages.
+    const popularPerson = await buildGet(
+      `person/popular?page=${getRandomInt(5) + 1}`
     );
-    console.log(popularMovies);
-    const results = popularMovies.data.results;
-    console.log(results[getRandomInt(results.length)]);
+    const results = popularPerson.data.results;
     return results[getRandomInt(results.length)];
   } catch (error) {
     throw new Error(error);
   }
 }
 
-export { getRandPopularMovie };
+async function getPerson(id) {
+  try {
+    const person = await buildGet(`person/${id}`);
+    return person.data;
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+export { getRandPopularMovie, getRandPopularPerson, getPerson };

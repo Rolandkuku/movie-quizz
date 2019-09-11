@@ -1,6 +1,7 @@
 // @flow
 import React, { useEffect, useState } from "react";
 import Button from "@material-ui/core/Button";
+import { makeStyles } from "@material-ui/styles";
 
 import {
   getRandPopularMovie,
@@ -9,6 +10,29 @@ import {
 } from "../services/index";
 import { getRandomInt } from "../utils";
 import { BASE_TMDB_POSTER_URL } from "../config/constants";
+
+const { innerHeight } = window;
+console.log(innerHeight);
+
+const useStyles = makeStyles({
+  root: {
+    background: "linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)",
+    color: "white",
+    padding: "1em",
+    position: "relative",
+    minHeight: innerHeight
+  },
+  picturesContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center"
+  },
+  picture: {
+    padding: "1em",
+    width: "40%"
+  }
+});
 
 async function getRoundData(setMovie, setPerson, setPlaysIn) {
   const shouldPickPersonFromCast = getRandomInt(2);
@@ -27,22 +51,32 @@ function Game() {
   const [person, setPerson] = useState({});
   const [movie, setMovie] = useState({});
   const [playsIn, setPlaysIn] = useState(false);
+  const classes = useStyles();
   function loadData() {
     getRoundData(setMovie, setPerson, setPlaysIn);
   }
+  useEffect(() => {
+    if (!movie.id && !person.id) {
+      loadData();
+    }
+  });
   return (
-    <div>
+    <div className={classes.root}>
       <h1>Game</h1>
       <h2>Plays in: {playsIn ? "yes" : "no"}</h2>
       <Button onClick={loadData}>Load fresh data</Button>
-      <img
-        src={`${BASE_TMDB_POSTER_URL}${movie.poster_path}`}
-        alt={`${movie.name} poster`}
-      />
-      <img
-        src={`${BASE_TMDB_POSTER_URL}${person.profile_path}`}
-        alt={`${movie.name} poster`}
-      />
+      <div className={classes.picturesContainer}>
+        <img
+          src={`${BASE_TMDB_POSTER_URL}${movie.poster_path}`}
+          alt={`${movie.title} poster`}
+          className={classes.picture}
+        />
+        <img
+          src={`${BASE_TMDB_POSTER_URL}${person.profile_path}`}
+          alt={`${person.name} poster`}
+          className={classes.picture}
+        />
+      </div>
     </div>
   );
 }

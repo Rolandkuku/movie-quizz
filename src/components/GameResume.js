@@ -1,26 +1,36 @@
 // @flow
 import React from "react";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Button
+} from "@material-ui/core";
 import { withRouter } from "react-router-dom";
 
 import { Timer } from ".";
-import type { Game, Answer } from "../types";
+import type { Answer } from "../types";
 
 function GameResumeComponent({ history }) {
   console.log(history);
   if (!history.location.state.game) {
     history.push("/"); // TODO: proper error handling.
   }
-  const game: Game = history.location.state;
-  const { score, timer, answers } = history.location.state.game;
+  const { score, timer, answers, userName } = history.location.state.game;
   return (
     <div>
+      <h2>{userName}</h2>
       <h2>{`Score: ${score}`}</h2>
-      <h3>{`Time: ${timer}`}</h3>
+      <Timer>{timer}</Timer>
+      <Button
+        color="primary"
+        variant="contained"
+        onClick={() => history.push("/")}
+      >
+        Go home
+      </Button>
       <Table>
         <TableHead>
           <TableRow>

@@ -37,7 +37,9 @@ const useStyles = makeStyles({
 
 const freshGame: GameType = {
   score: 0,
-  answers: []
+  timer: 0,
+  answers: [],
+  userName: null
 };
 
 let game: GameType = freshGame;
@@ -66,8 +68,15 @@ async function getRoundData(
   setLoading(false);
 }
 
-function updateGame({ score, answers }, person, movie, time, guessedRight) {
+function updateGame(
+  { score, answers, userName },
+  person,
+  movie,
+  time,
+  guessedRight
+) {
   return {
+    userName,
     score: score + 1,
     timer: time,
     answers: [
@@ -91,6 +100,11 @@ function updateGame({ score, answers }, person, movie, time, guessedRight) {
 }
 
 function GameComponent({ history }) {
+  const { userName } = history.location.state;
+  if (!userName) {
+    history.replace("/");
+  }
+  game.userName = userName;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [person, setPerson] = useState({});

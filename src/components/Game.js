@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Button from "@material-ui/core/Button";
 import { makeStyles } from "@material-ui/styles";
+import { withRouter } from "react-router-dom";
 
 import { Timer } from ".";
 import {
@@ -14,16 +15,8 @@ import { BASE_TMDB_POSTER_URL } from "../config/constants";
 import type { Game as GameType } from "../types";
 
 const { innerHeight } = window;
-// console.log(innerHeight);
 
 const useStyles = makeStyles({
-  root: {
-    background: "linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)",
-    color: "white",
-    padding: "1em",
-    position: "relative",
-    minHeight: innerHeight
-  },
   picturesContainer: {
     display: "flex",
     flexDirection: "row",
@@ -46,6 +39,8 @@ const freshGame: GameType = {
   score: 0,
   answers: []
 };
+
+let game: GameType = freshGame;
 
 async function getRoundData(
   setMovie,
@@ -71,17 +66,40 @@ async function getRoundData(
   setLoading(false);
 }
 
-function Game() {
+function updateGame({ score, answers }, person, movie, time, guessedRight) {
+  return {
+    score: score + 1,
+    timer: time,
+    answers: [
+      ...answers,
+      {
+        person: {
+          name: person.name,
+          picture: person.profile_path,
+          id: person.id
+        },
+        movie: {
+          name: movie.title,
+          poster: movie.poster_path,
+          id: movie.id
+        },
+        time: time,
+        guessedRight
+      }
+    ]
+  };
+}
+
+function GameComponent({ history }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [person, setPerson] = useState({});
   const [movie, setMovie] = useState({});
   const [playsIn, setPlaysIn] = useState(false);
-  const [game, setGame]: [GameType, (GameType) => any] = useState(freshGame);
   const classes = useStyles();
   // Data for timer
   const intervalId = useRef(null);
-  const [time, setTime] = useState(50);
+  const [time, setTime] = useState(0);
   const [running, setRunning] = useState(true);
   // Load data for the next round.
   function loadData() {
@@ -89,29 +107,13 @@ function Game() {
   }
   // Save guess if correct.
   function onMakeAGuess(guess: boolean) {
-    if (guess === playsIn) {
-      setGame(({ score, answers }) => ({
-        score: score + 1,
-        answers: [
-          ...answers,
-          {
-            person: {
-              name: person.name,
-              picture: person.profile_path,
-              id: person.id
-            },
-            movie: {
-              name: movie.title,
-              poster: movie.poster_path,
-              id: movie.id
-            },
-            timer: time
-          }
-        ]
-      }));
+    const guessedRight = guess === playsIn;
+    game = updateGame(game, person, movie, time, guessedRight);
+    if (guessedRight) {
       loadData();
     } else {
-      // Todo
+      history.push("/game-resume", { game });
+      game = freshGame;
     }
   }
   // Load fresh data upon first load.
@@ -129,10 +131,13 @@ function Game() {
     } else {
       clearInterval(intervalId.current);
     }
+    return () => {
+      clearInterval(intervalId.current);
+    };
   }, [running]);
 
   return (
-    <div className={classes.root}>
+    <div>
       <h1>Game</h1>
       {error ? <p>{error}</p> : null}
       <h2>Plays in: {playsIn ? "yes" : "no"}</h2>
@@ -177,5 +182,7 @@ function Game() {
     </div>
   );
 }
+
+const Game = withRouter(GameComponent);
 
 export { Game };

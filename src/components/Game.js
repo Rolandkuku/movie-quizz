@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Button from "@material-ui/core/Button";
 import { makeStyles } from "@material-ui/styles";
 
+import { Timer } from ".";
 import {
   getRandPopularMovie,
   getRandPopularPerson,
@@ -10,6 +11,7 @@ import {
 } from "../services/index";
 import { getRandomInt } from "../utils";
 import { BASE_TMDB_POSTER_URL } from "../config/constants";
+import type { Answer, Game as GameType } from "../types";
 
 const { innerHeight } = window;
 console.log(innerHeight);
@@ -31,8 +33,19 @@ const useStyles = makeStyles({
   picture: {
     padding: "1em",
     width: "40%"
+  },
+  actionsContainer: {
+    display: "flex",
+    flexDirection: "row",
+    padding: "1em",
+    justifyContent: "space-around"
   }
 });
+
+const freshGame: GameType = {
+  score: 0,
+  answers: []
+};
 
 async function getRoundData(setMovie, setPerson, setPlaysIn) {
   const shouldPickPersonFromCast = getRandomInt(2);
@@ -64,6 +77,7 @@ function Game() {
     <div className={classes.root}>
       <h1>Game</h1>
       <h2>Plays in: {playsIn ? "yes" : "no"}</h2>
+      <Timer running />
       <Button onClick={loadData}>Load fresh data</Button>
       <div className={classes.picturesContainer}>
         <img
@@ -76,6 +90,14 @@ function Game() {
           alt={`${person.name} poster`}
           className={classes.picture}
         />
+      </div>
+      <div className={classes.actionsContainer}>
+        <Button size="large" variant="contained" color="primary">
+          Yes
+        </Button>
+        <Button size="large" variant="contained" color="secondary">
+          No
+        </Button>
       </div>
     </div>
   );

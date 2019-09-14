@@ -15,8 +15,6 @@ import { BASE_TMDB_POSTER_URL } from "../config/constants";
 import { saveGame } from "../services";
 import type { Game as GameType } from "../types";
 
-const { innerHeight } = window;
-
 const useStyles = makeStyles({
   picturesContainer: {
     display: "flex",

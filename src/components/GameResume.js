@@ -13,12 +13,11 @@ import { withRouter } from "react-router-dom";
 import { Timer } from ".";
 import type { Answer } from "../types";
 
-function GameResumeComponent({ history }) {
-  console.log(history);
-  if (!history.location.state.game) {
+function GameResumeComponent({ history, userName }) {
+  if (!history.location.state.game || !userName) {
     history.push("/"); // TODO: proper error handling.
   }
-  const { score, timer, answers, userName } = history.location.state.game;
+  const { score, timer, answers } = history.location.state.game;
   return (
     <div>
       <h2>{userName}</h2>

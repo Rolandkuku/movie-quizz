@@ -5,5 +5,7 @@ export type Game = {
   score: number,
   answers: Array<Answer>,
   timer: string,
-  userName: string
+  userName: string,
+  date: string,
+  +id: string
 };

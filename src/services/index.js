@@ -2,6 +2,8 @@ import axios from "axios";
 import { BASE_TMDB_URL, TMDB_API_KEY } from "../config/constants";
 import { getRandomInt } from "../utils";
 
+export * from "./firestore";
+
 const buildGet = async url =>
   axios.get(
     `${BASE_TMDB_URL}${url}${

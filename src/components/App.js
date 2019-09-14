@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
-import "react-virtualized/styles.css";
 
-import { Game, Home, GameResume } from "./";
+import { Game, Home, GameResume, Scores } from "./";
 import "../styles/App.css";
 
 const { innerHeight } = window;
@@ -20,12 +19,26 @@ const useStyles = makeStyles({
 
 function App() {
   const classes = useStyles();
+  const [userName, setUserName] = useState(null);
   return (
     <div className={classes.root}>
       <Router>
-        <Route path="/" exact component={Home} />
-        <Route path="/game" component={Game} />
-        <Route path="/game-resume" component={GameResume} />
+        <Route
+          path="/"
+          exact
+          component={() => (
+            <Home
+              userName={userName}
+              onSetUserName={name => setUserName(name)}
+            />
+          )}
+        />
+        <Route path="/game" component={() => <Game userName={userName} />} />
+        <Route
+          path="/game-resume"
+          component={() => <GameResume userName={userName} />}
+        />
+        <Route path="/scores" component={Scores} />
       </Router>
     </div>
   );

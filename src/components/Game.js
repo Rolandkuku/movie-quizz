@@ -12,6 +12,7 @@ import {
 } from "../services/index";
 import { getRandomInt } from "../utils";
 import { BASE_TMDB_POSTER_URL } from "../config/constants";
+import { saveGame } from "../services";
 import type { Game as GameType } from "../types";
 
 const { innerHeight } = window;
@@ -68,6 +69,19 @@ async function getRoundData(
   setLoading(false);
 }
 
+async function onSaveGame(game: Game, setLoading, setError) {
+  setLoading(true);
+  try {
+    await saveGame(game);
+    setError(null);
+    return true;
+  } catch (error) {
+    setError(error);
+  }
+  setLoading(false);
+  return false;
+}
+
 function updateGame(
   { score, answers, userName },
   person,
@@ -99,8 +113,7 @@ function updateGame(
   };
 }
 
-function GameComponent({ history }) {
-  const { userName } = history.location.state;
+function GameComponent({ history, userName }) {
   if (!userName) {
     history.replace("/");
   }
@@ -120,14 +133,16 @@ function GameComponent({ history }) {
     getRoundData(setMovie, setPerson, setPlaysIn, setLoading, setError);
   }
   // Save guess if correct.
-  function onMakeAGuess(guess: boolean) {
+  async function onMakeAGuess(guess: boolean) {
     const guessedRight = guess === playsIn;
     game = updateGame(game, person, movie, time, guessedRight);
     if (guessedRight) {
       loadData();
     } else {
-      history.push("/game-resume", { game });
-      game = freshGame;
+      if (await onSaveGame(game, setLoading, setError)) {
+        history.push("/game-resume", { game });
+        game = freshGame;
+      }
     }
   }
   // Load fresh data upon first load.

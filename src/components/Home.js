@@ -1,13 +1,14 @@
 // @flow
 import React, { useState } from "react";
-import { withRouter } from "react-router-dom";
+import { withRouter, Link } from "react-router-dom";
 import { TextField, Button } from "@material-ui/core";
 
-function HomeComponent({ history }) {
+function HomeComponent({ history, onSetUserName }) {
   const [userName, setUserName] = useState("");
   function onNameSubmit() {
     if (userName) {
-      history.push("/game", { userName });
+      onSetUserName(userName);
+      history.push("/game");
     }
   }
   return (
@@ -27,6 +28,7 @@ function HomeComponent({ history }) {
         />
         <Button onClick={() => onNameSubmit()}>Go to game</Button>
       </form>
+      <Link to="/scores">High scores</Link>
     </div>
   );
 }

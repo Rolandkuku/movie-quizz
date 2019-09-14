@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { HashRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 
 import { Game, Home, GameResume, Scores } from "./";
 import "../styles/App.css";
+import { makeFreshGame } from "../utils";
+import { Game as GameType } from "../types";
 
 const useStyles = makeStyles({
   root: {
@@ -23,6 +25,7 @@ const useStyles = makeStyles({
 
 function App() {
   const classes = useStyles();
+  const [currentGame, setCurrentGame] = useState(makeFreshGame());
   const [userName, setUserName] = useState(null);
   return (
     <div>
@@ -39,10 +42,20 @@ function App() {
               />
             )}
           />
-          <Route path="/game" component={() => <Game userName={userName} />} />
+          <Route
+            path="/game"
+            component={() => (
+              <Game
+                onSaveCurrentGame={(game: GameType) => setCurrentGame(game)}
+                userName={userName}
+              />
+            )}
+          />
           <Route
             path="/game-resume"
-            component={() => <GameResume userName={userName} />}
+            component={() => (
+              <GameResume game={currentGame} userName={userName} />
+            )}
           />
           <Route path="/scores" component={Scores} />
         </Router>

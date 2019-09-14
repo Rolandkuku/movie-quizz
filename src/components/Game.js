@@ -12,7 +12,7 @@ import {
   getRandPopularPerson,
   getPerson
 } from "../services/index";
-import { getRandomInt } from "../utils";
+import { getRandomInt, makeFreshGame } from "../utils";
 import { saveGame } from "../services";
 import type { Game as GameType } from "../types";
 
@@ -42,14 +42,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const freshGame: GameType = {
-  score: 0,
-  timer: 0,
-  answers: [],
-  userName: null
-};
-
-let game: GameType = freshGame;
+let game: GameType = makeFreshGame();
 
 async function getRoundData(
   setMovie,
@@ -119,7 +112,7 @@ function updateGame(
   };
 }
 
-function GameComponent({ history, userName }) {
+function GameComponent({ history, userName, onSaveCurrentGame }) {
   if (!userName) {
     history.replace("/");
   }
@@ -146,8 +139,9 @@ function GameComponent({ history, userName }) {
       loadData();
     } else {
       if (await onSaveGame(game, setLoading, setError)) {
-        history.push("/game-resume", { game });
-        game = freshGame;
+        onSaveCurrentGame(game);
+        history.push("/game-resume");
+        game = makeFreshGame();
       }
     }
   }

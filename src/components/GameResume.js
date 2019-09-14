@@ -30,6 +30,13 @@ function GameResumeComponent({ history, userName }) {
       >
         Go home
       </Button>
+      <Button
+        color="secondary"
+        variant="contained"
+        onClick={() => history.push("/game")}
+      >
+        Play again
+      </Button>
       <Table>
         <TableHead>
           <TableRow>

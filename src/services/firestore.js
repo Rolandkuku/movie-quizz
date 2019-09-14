@@ -30,6 +30,7 @@ async function getGames() {
       .collection("games")
       .orderBy("score", "desc")
       .orderBy("timer")
+      .limit(10)
       .get();
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (e) {

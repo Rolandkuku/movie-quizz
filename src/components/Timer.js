@@ -5,12 +5,12 @@ const momentInstance = moment();
 
 function Timer({ children }: { children: number }) {
   return (
-    <p>
+    <span>
       {momentInstance
         .minute(0)
         .second(children)
         .format("mm:ss")}
-    </p>
+    </span>
   );
 }
 

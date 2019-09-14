@@ -1,38 +1,46 @@
 // @flow
 import React, { useEffect, useState, useRef } from "react";
-import Button from "@material-ui/core/Button";
-import { makeStyles } from "@material-ui/styles";
+import { Button, Typography, makeStyles } from "@material-ui/core";
+import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
+import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
+
 import { withRouter } from "react-router-dom";
 
-import { Timer } from ".";
+import { Timer, Poster } from ".";
 import {
   getRandPopularMovie,
   getRandPopularPerson,
   getPerson
 } from "../services/index";
 import { getRandomInt } from "../utils";
-import { BASE_TMDB_POSTER_URL } from "../config/constants";
 import { saveGame } from "../services";
 import type { Game as GameType } from "../types";
 
-const useStyles = makeStyles({
+const useStyles = makeStyles(theme => ({
+  title: {
+    textAlign: "center"
+  },
   picturesContainer: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
     alignItems: "center"
-  },
-  picture: {
-    padding: "1em",
-    width: "40%"
   },
   actionsContainer: {
     display: "flex",
     flexDirection: "row",
-    padding: "1em",
-    justifyContent: "space-around"
+    padding: theme.spacing(2),
+    justifyContent: "center"
+  },
+  action: {
+    margin: theme.spacing(2)
+  },
+  gameHUD: {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: theme.spacing(2)
   }
-});
+}));
 
 const freshGame: GameType = {
   score: 0,
@@ -165,22 +173,21 @@ function GameComponent({ history, userName }) {
 
   return (
     <div>
-      <h1>Game</h1>
       {error ? <p>{error}</p> : null}
-      <h2>Plays in: {playsIn ? "yes" : "no"}</h2>
-      <Timer>{time}</Timer>
-      <h3>{`Your score: ${game.score}`}</h3>
+      <div className={classes.gameHUD}>
+        <Typography variant="h3">
+          <Timer>{time}</Timer>
+        </Typography>
+        <Typography variant="h3">{`Your score: ${game.score}`}</Typography>
+      </div>
       <div className={classes.picturesContainer}>
-        <img
-          src={`${BASE_TMDB_POSTER_URL}${movie.poster_path}`}
-          alt={`${movie.title} poster`}
-          className={classes.picture}
+        <Poster
+          loading={loading}
+          path={person.profile_path}
+          name={person.name}
         />
-        <img
-          src={`${BASE_TMDB_POSTER_URL}${person.profile_path}`}
-          alt={`${person.name} poster`}
-          className={classes.picture}
-        />
+        <Typography variant="h2">?</Typography>
+        <Poster loading={loading} path={movie.poster_path} name={movie.title} />
       </div>
       <div className={classes.actionsContainer}>
         <Button
@@ -191,8 +198,9 @@ function GameComponent({ history, userName }) {
           onClick={() => {
             onMakeAGuess(true);
           }}
+          className={classes.action}
         >
-          Yes
+          <CheckRoundedIcon />
         </Button>
         <Button
           size="large"
@@ -202,8 +210,9 @@ function GameComponent({ history, userName }) {
             onMakeAGuess(false);
           }}
           disabled={loading}
+          className={classes.action}
         >
-          No
+          <CloseRoundedIcon />
         </Button>
       </div>
     </div>

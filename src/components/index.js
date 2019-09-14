@@ -4,3 +4,4 @@ export { Timer } from "./Timer";
 export { Home } from "./Home";
 export { GameResume } from "./GameResume";
 export { Scores } from "./Scores";
+export { Poster } from "./Poster";

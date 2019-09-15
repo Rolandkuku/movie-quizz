@@ -75,7 +75,7 @@ async function onSaveGame(game: Game, setLoading, setError) {
     setError(null);
     return true;
   } catch (error) {
-    setError(error);
+    setError(error.message);
   }
   setLoading(false);
   return false;
@@ -89,7 +89,7 @@ function updateGame(
   guessedRight
 ) {
   return {
-    userName,
+    winner: userName,
     score: score + 1,
     timer: time,
     answers: [
@@ -106,7 +106,7 @@ function updateGame(
           id: movie.id
         },
         time: time,
-        guessedRight
+        guesses: [{ userName, guessedRight }]
       }
     ]
   };

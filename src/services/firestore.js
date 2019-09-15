@@ -2,7 +2,7 @@
 import firebase from "firebase/app";
 import "firebase/firestore";
 import moment from "moment";
-import type { Game } from "../types";
+import type { Game, Lobby } from "../types";
 
 firebase.initializeApp({
   apiKey: "AIzaSyCaStI5D_GU0kN20ZBSwaFlzkoj0Xa6It8",
@@ -38,4 +38,50 @@ async function getGames() {
   }
 }
 
-export { saveGame, getGames };
+async function createLobby(userName: string) {
+  try {
+    return db.collection("lobbies").add({
+      users: [
+        {
+          name: userName,
+          score: 0,
+          lives: 3,
+          ready: false
+        }
+      ],
+      date: moment().format()
+    });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function addUserToLobby(userName: string, lobbyId: string) {
+  try {
+    const lobbyDoc = await db.collection("lobbies").doc(lobbyId);
+    return lobbyDoc.update({
+      users: firebase.firestore.FieldValue.arrayUnion({
+        name: userName,
+        score: 0,
+        lives: 3,
+        ready: false
+      })
+    });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function getLobby(lobbyId: string) {
+  try {
+    const lobbyDoc = await db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .get();
+    return lobbyDoc.data();
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+export { saveGame, getGames, createLobby, addUserToLobby, getLobby };

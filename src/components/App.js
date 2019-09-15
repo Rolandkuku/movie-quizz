@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { HashRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 
-import { Game, Home, GameResume, Scores } from "./";
+import { Game, Home, GameResume, Scores, Lobby } from "./";
 import "../styles/App.css";
 import { makeFreshGame } from "../utils";
 import { Game as GameType } from "../types";
@@ -58,6 +58,7 @@ function App() {
             )}
           />
           <Route path="/scores" component={Scores} />
+          <Route path="/lobby/:id" component={Lobby} />
         </Router>
       </div>
     </div>

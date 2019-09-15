@@ -11,6 +11,6 @@ export type Answer = {
     poster: string,
     name: string
   },
-  guessedRight: boolean,
+  guesses: Array<{ userName: string, guessedRight: boolean }>,
   time: string
 };

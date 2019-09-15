@@ -56,10 +56,10 @@ function Scores({ history }: { history: any }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {games.map(({ id, userName, score, timer, date }: Game, index) => (
+          {games.map(({ id, winner, score, timer, date }: Game, index) => (
             <TableRow key={id}>
               <TableCell>{index + 1}</TableCell>
-              <TableCell>{userName}</TableCell>
+              <TableCell>{winner}</TableCell>
               <TableCell>{score}</TableCell>
               <TableCell>
                 <Timer>{timer}</Timer>

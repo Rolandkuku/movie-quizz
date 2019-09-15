@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { withRouter, Link } from "react-router-dom";
 import { TextField, Button, makeStyles, Typography } from "@material-ui/core";
+import { createLobby, addUserToLobby } from "../services";
 
 const useStyles = makeStyles(theme => ({
   title: {
@@ -28,25 +29,32 @@ const useStyles = makeStyles(theme => ({
     position: "fixed",
     bottom: "0px",
     padding: theme.spacing(2)
+  },
+  action: {
+    margin: theme.spacing(1)
   }
 }));
+
+const icons = ["🦹🏿‍", "👨🏻‍🏭", "🕵️‍", "👨🏽‍🎤", "👨🏼‍🏫", "🧛🏻‍", "👩🏿‍🚒", "👩‍⚖️", "🧟‍", "👨‍💼"];
+
+function getLobbyId() {
+  const hash = window.location.hash;
+  const start = hash.indexOf("next");
+  if (start >= 0) {
+    return hash.slice(start).split("=")[1];
+  }
+  return null;
+}
 
 function HomeComponent({ history, onSetUserName }) {
   const [userName, setUserName] = useState("");
   const [activeIcon, setActiveIcon] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const intervalId = useRef(null);
-  const icons = [
-    "🦹🏿‍",
-    "👨🏻‍🏭",
-    "🕵️‍",
-    "👨🏽‍🎤",
-    "👨🏼‍🏫",
-    "🧛🏻‍",
-    "👩🏿‍🚒",
-    "👩‍⚖️",
-    "🧟‍",
-    "👨‍💼"
-  ];
+  const classes = useStyles();
+  const lobbyId = getLobbyId();
+  console.log(lobbyId);
   useEffect(() => {
     intervalId.current = setInterval(() => {
       if (activeIcon < icons.length - 1) {
@@ -58,12 +66,33 @@ function HomeComponent({ history, onSetUserName }) {
     return function cleanup() {
       clearInterval(intervalId.current);
     };
-  }, [activeIcon, icons.length]);
-  const classes = useStyles();
-  function onNameSubmit() {
+  }, [activeIcon]);
+
+  async function onNameSubmit(isMulti = false) {
     if (userName) {
       onSetUserName(userName);
-      history.push("/game");
+      if (isMulti) {
+        try {
+          setLoading(true);
+          setError(null);
+          const lobby = await createLobby(userName);
+          history.push(`/lobby/${lobby.id}`);
+        } catch (error) {
+          setError(error);
+        }
+        setLoading(false);
+      } else {
+        if (lobbyId) {
+          try {
+            await addUserToLobby(userName, lobbyId);
+            history.push(`/lobby/${lobbyId}`);
+          } catch (error) {
+            setError(error);
+          }
+        } else {
+          history.push("/game");
+        }
+      }
     }
   }
   return (
@@ -76,7 +105,8 @@ function HomeComponent({ history, onSetUserName }) {
       >
         MOVIE QUIZZ
       </Typography>
-      <Typography className={classes.icon} variant="h1" component="h2">
+      {error ? <Typography align="center">{error}</Typography> : null}
+      <h1 className={classes.icon}>
         <span role="img" aria-label="movie icon">
           🎬
         </span>{" "}
@@ -84,7 +114,7 @@ function HomeComponent({ history, onSetUserName }) {
         <span role="img" aria-label="movie icon">
           {icons[activeIcon]}
         </span>
-      </Typography>
+      </h1>
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -106,9 +136,23 @@ function HomeComponent({ history, onSetUserName }) {
             color="primary"
             size="large"
             onClick={() => onNameSubmit()}
+            disabled={loading}
+            className={classes.action}
           >
             PLAY !
           </Button>
+          {!lobbyId ? (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              onClick={() => onNameSubmit(true)}
+              disabled={loading}
+              className={classes.action}
+            >
+              Go multi
+            </Button>
+          ) : null}
         </div>
       </form>
       <div className={classes.footer}>

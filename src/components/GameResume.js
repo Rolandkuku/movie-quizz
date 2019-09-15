@@ -47,14 +47,18 @@ function GameResumeComponent({ history, userName, game }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {answers.map((answer: Answer) => (
-            <TableRow key={answer.time}>
-              <TableCell>{answer.time}</TableCell>
-              <TableCell>{answer.person.name}</TableCell>
-              <TableCell>{answer.movie.name}</TableCell>
-              <TableCell>{answer.guessedRight ? "yes" : "no"}</TableCell>
-            </TableRow>
-          ))}
+          {answers.map((answer: Answer) => {
+            return (
+              <TableRow key={answer.time}>
+                <TableCell>{answer.time}</TableCell>
+                <TableCell>{answer.person.name}</TableCell>
+                <TableCell>{answer.movie.name}</TableCell>
+                <TableCell>
+                  {answer.guesses[0].guessedRight ? "yes" : "no"}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

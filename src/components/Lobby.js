@@ -1,13 +1,21 @@
 // @flow
 import React, { useState, useEffect } from "react";
 import type { History } from "react-router-dom";
+import {
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  Button
+} from "@material-ui/core";
+import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
+import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
-import { getLobby } from "../services";
+import { getLobby, listenLobbyUserChanges } from "../services";
 import type { Lobby as LobbyType } from "../types";
 
-const lobbyId = window.location.hash.split("/")[2];
-
-async function getCurrentLobby(setLobby) {
+async function getCurrentLobby(setLobby, lobbyId) {
   try {
     const lobby = await getLobby(lobbyId);
     setLobby(lobby);
@@ -17,19 +25,42 @@ async function getCurrentLobby(setLobby) {
 }
 
 function Lobby({ history }: { history: History }) {
+  const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState(null);
   useEffect(() => {
     if (!lobby) {
-      getCurrentLobby(setLobby);
+      getCurrentLobby(setLobby, lobbyId);
     }
-  }, [lobby]);
+  }, [lobby, lobbyId]);
+  useEffect(() => {
+    const unsubscribe = listenLobbyUserChanges(lobbyId, users =>
+      setLobby({ ...lobby, users })
+    );
+    return unsubscribe;
+  }, [lobbyId, lobby]);
   return (
     <div>
       <p>
         Lobby invite friends with this link:{" "}
         {`${window.location.host}/#/?next=${lobbyId}`}
       </p>
-      {lobby ? lobby.users.map(user => <p>{user.name}</p>) : null}
+      <List>
+        {lobby
+          ? lobby.users.map(user => (
+              <ListItem key={user.id}>
+                <ListItemIcon>
+                  {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
+                </ListItemIcon>
+                <ListItemText primary={user.name} />
+                <ListItemSecondaryAction>
+                  <Button color="primary" onClick={() => {}}>
+                    Ready
+                  </Button>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))
+          : null}
+      </List>
     </div>
   );
 }

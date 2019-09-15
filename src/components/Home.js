@@ -54,7 +54,6 @@ function HomeComponent({ history, onSetUserName }) {
   const intervalId = useRef(null);
   const classes = useStyles();
   const lobbyId = getLobbyId();
-  console.log(lobbyId);
   useEffect(() => {
     intervalId.current = setInterval(() => {
       if (activeIcon < icons.length - 1) {

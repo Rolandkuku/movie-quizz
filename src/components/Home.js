@@ -46,14 +46,15 @@ function getLobbyId() {
   return null;
 }
 
-function HomeComponent({ history, onSetUserName }) {
-  const [userName, setUserName] = useState("");
+function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
+  const [userNameField, setUserNameField] = useState(userName);
   const [activeIcon, setActiveIcon] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const intervalId = useRef(null);
   const classes = useStyles();
   const lobbyId = getLobbyId();
+
   useEffect(() => {
     intervalId.current = setInterval(() => {
       if (activeIcon < icons.length - 1) {
@@ -68,13 +69,13 @@ function HomeComponent({ history, onSetUserName }) {
   }, [activeIcon]);
 
   async function onNameSubmit(isMulti = false) {
-    if (userName) {
-      onSetUserName(userName);
+    if (userNameField) {
+      onSetUserName(userNameField);
       if (isMulti) {
         try {
           setLoading(true);
           setError(null);
-          const lobby = await createLobby(userName);
+          const lobby = await createLobby(userNameField);
           history.push(`/lobby/${lobby.id}`);
         } catch (error) {
           setError(error);
@@ -83,7 +84,7 @@ function HomeComponent({ history, onSetUserName }) {
       } else {
         if (lobbyId) {
           try {
-            await addUserToLobby(userName, lobbyId);
+            await addUserToLobby(userNameField, lobbyId);
             history.push(`/lobby/${lobbyId}`);
           } catch (error) {
             setError(error);
@@ -121,14 +122,18 @@ function HomeComponent({ history, onSetUserName }) {
         }}
         className={classes.form}
       >
-        <TextField
-          id="name"
-          placeholder="Enter your name"
-          value={userName}
-          onChange={e => {
-            setUserName(e.target.value);
-          }}
-        />
+        {!userName ? (
+          <TextField
+            id="name"
+            placeholder="Enter your name"
+            value={userNameField || ""}
+            onChange={e => {
+              setUserNameField(e.target.value);
+            }}
+          />
+        ) : (
+          <Typography align="center">{`Hello ${userName}`}</Typography>
+        )}
         <div className={classes.buttonContainer}>
           <Button
             variant="contained"
@@ -156,6 +161,7 @@ function HomeComponent({ history, onSetUserName }) {
       </form>
       <div className={classes.footer}>
         <Link to="/scores">High scores</Link>
+        {userName ? <Button onClick={onUnsetUserName}>Logout</Button> : null}
       </div>
     </div>
   );

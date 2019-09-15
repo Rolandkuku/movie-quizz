@@ -99,14 +99,14 @@ async function getLobby(lobbyId: string) {
   }
 }
 
-async function setUserReady(lobbyId: string, userId: string) {
+async function setUserReady(lobbyId: string, userId: string, ready: boolean) {
   try {
     return db
       .collection("lobbies")
       .doc(lobbyId)
       .collection("users")
       .doc(userId)
-      .update({ ready: true });
+      .update({ ready });
   } catch (e) {
     throw new Error(e);
   }

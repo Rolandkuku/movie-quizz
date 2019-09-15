@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { HashRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 
@@ -6,6 +6,7 @@ import { Game, Home, GameResume, Scores, Lobby } from "./";
 import "../styles/App.css";
 import { makeFreshGame } from "../utils";
 import { Game as GameType } from "../types";
+import { setName as setLocalName, getName, unsetName } from "../services";
 
 const useStyles = makeStyles({
   root: {
@@ -27,6 +28,22 @@ function App() {
   const classes = useStyles();
   const [currentGame, setCurrentGame] = useState(makeFreshGame());
   const [userName, setUserName] = useState(null);
+
+  useEffect(() => {
+    if (!userName) {
+      setUserName(getName());
+    }
+  }, [userName]);
+
+  const onUnsetUserName = () => {
+    setUserName(null);
+    unsetName();
+  };
+
+  const onSetUserName = userName => {
+    setUserName(userName);
+    setLocalName(userName);
+  };
   return (
     <div>
       <div className={classes.gradientBackground} />
@@ -38,7 +55,8 @@ function App() {
             component={() => (
               <Home
                 userName={userName}
-                onSetUserName={name => setUserName(name)}
+                onUnsetUserName={onUnsetUserName}
+                onSetUserName={onSetUserName}
               />
             )}
           />
@@ -58,7 +76,10 @@ function App() {
             )}
           />
           <Route path="/scores" component={Scores} />
-          <Route path="/lobby/:id" component={Lobby} />
+          <Route
+            path="/lobby/:id"
+            component={() => <Lobby userName={userName} />}
+          />
         </Router>
       </div>
     </div>

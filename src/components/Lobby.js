@@ -1,5 +1,5 @@
 // @flow
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { History } from "react-router-dom";
 import {
   List,
@@ -12,32 +12,55 @@ import {
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
-import { getLobby, listenLobbyUserChanges } from "../services";
+import { getLobby, listenLobbyUserChanges, setUserReady } from "../services";
 import type { Lobby as LobbyType } from "../types";
 
-async function getCurrentLobby(setLobby, lobbyId) {
+async function getCurrentLobby(setLobby, setLobbyLoading, lobbyId) {
   try {
+    setLobbyLoading(true);
     const lobby = await getLobby(lobbyId);
     setLobby(lobby);
   } catch (error) {
     throw new Error(error);
   }
+  setLobbyLoading(false);
 }
 
-function Lobby({ history }: { history: History }) {
+async function setReady(
+  lobbyId: string,
+  userId: string,
+  ready: boolean,
+  setLoading: boolean => any
+) {
+  try {
+    setLoading(true);
+    await setUserReady(lobbyId, userId, ready);
+  } catch (error) {
+    throw new Error(error);
+  }
+  setLoading(false);
+}
+
+function Lobby({ history, userName }: { history: History, userName: string }) {
   const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState(null);
+  const [lobbyLoading, setLobbyLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const unsubscribe = useRef(null);
+
   useEffect(() => {
-    if (!lobby) {
-      getCurrentLobby(setLobby, lobbyId);
+    if (!unsubscribe.current) {
+      unsubscribe.current = listenLobbyUserChanges(lobbyId, () => {
+        getCurrentLobby(setLobby, setLobbyLoading, lobbyId);
+      });
+      return unsubscribe.current;
     }
-  }, [lobby, lobbyId]);
-  useEffect(() => {
-    const unsubscribe = listenLobbyUserChanges(lobbyId, users =>
-      setLobby({ ...lobby, users })
-    );
-    return unsubscribe;
-  }, [lobbyId, lobby]);
+  }, [lobbyId]);
+
+  function onSetReady(userId: string, ready: boolean) {
+    setReady(lobbyId, userId, ready, setLoading);
+  }
+
   return (
     <div>
       <p>
@@ -52,11 +75,17 @@ function Lobby({ history }: { history: History }) {
                   {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
                 </ListItemIcon>
                 <ListItemText primary={user.name} />
-                <ListItemSecondaryAction>
-                  <Button color="primary" onClick={() => {}}>
-                    Ready
-                  </Button>
-                </ListItemSecondaryAction>
+                {userName === user.name ? (
+                  <ListItemSecondaryAction>
+                    <Button
+                      color="primary"
+                      disabled={loading}
+                      onClick={() => onSetReady(user.id, !user.ready)}
+                    >
+                      {user.ready ? "Not ready" : "Go !"}
+                    </Button>
+                  </ListItemSecondaryAction>
+                ) : null}
               </ListItem>
             ))
           : null}

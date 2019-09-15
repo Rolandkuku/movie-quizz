@@ -3,6 +3,7 @@ import { BASE_TMDB_URL, TMDB_API_KEY } from "../config/constants";
 import { getRandomInt } from "../utils";
 
 export * from "./firestore";
+export * from "./local";
 
 const buildGet = async url =>
   axios.get(

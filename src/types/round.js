@@ -1,6 +1,7 @@
 // @flow
+import type { Guess } from ".";
 
-export type Answer = {
+export type Round = {
   person: {
     name: string,
     picture: string,
@@ -11,6 +12,8 @@ export type Answer = {
     poster: string,
     name: string
   },
-  guesses: Array<{ userName: string, guessedRight: boolean }>,
-  time: string
+  playsIn: boolean,
+  timer: boolean,
+  guesses: Array<Guess>,
+  +id: string
 };

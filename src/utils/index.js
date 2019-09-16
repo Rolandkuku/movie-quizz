@@ -1,6 +1,7 @@
 // @flow
 import moment from "moment";
-import type { Game } from "../types";
+import type { Game, Answer } from "../types";
+
 function getRandomInt(max: number) {
   return Math.floor(Math.random() * Math.floor(max));
 }

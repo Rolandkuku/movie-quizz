@@ -5,6 +5,7 @@ import { getRandomInt } from "../utils";
 export * from "./firestore";
 export * from "./local";
 export { lobbyServices } from "./lobby";
+export { roundServices } from "./round";
 
 const buildGet = async url =>
   axios.get(

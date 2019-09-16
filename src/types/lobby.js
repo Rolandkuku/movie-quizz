@@ -3,5 +3,8 @@ import type { User } from ".";
 
 export type Lobby = {
   users: Array<User>,
-  gameId: string
+  gameId: string,
+  master: string,
+  date: string,
+  lastRound: string
 };

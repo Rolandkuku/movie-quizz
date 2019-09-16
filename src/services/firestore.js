@@ -2,7 +2,7 @@
 import firebase from "firebase/app";
 import "firebase/firestore";
 import moment from "moment";
-import type { Game, Lobby, User } from "../types";
+import type { Game, Round, User, Movie, Person, Guess } from "../types";
 
 firebase.initializeApp({
   apiKey: "AIzaSyCaStI5D_GU0kN20ZBSwaFlzkoj0Xa6It8",
@@ -45,6 +45,87 @@ async function updateGame(game: Game) {
   }
 }
 
+async function createRound({
+  movie,
+  person,
+  lobbyId,
+  playsIn,
+  timer
+}: {
+  movie: Movie,
+  person: Person,
+  lobbyId: string,
+  playsIn: boolean,
+  timer: number
+}) {
+  try {
+    const lobbyRef = await db.collection("lobbies").doc(lobbyId);
+    await db.runTransaction(async transaction => {
+      const roundRef = await lobbyRef.collection("rounds").add({
+        movie,
+        person,
+        timer,
+        playsIn,
+        guesses: []
+      });
+      lobbyRef.update({ lastRound: roundRef.id });
+    });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
+  try {
+    return db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .collection("rounds")
+      .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === "added") {
+            cb(change.doc.id);
+          }
+        });
+      });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function getRound(roundId: string, lobbyId: string) {
+  try {
+    const roundDoc = await db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .collection("rounds")
+      .doc(roundId)
+      .get();
+    return roundDoc.data();
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function saveGuess({
+  roundId,
+  guess
+}: {
+  roundId: string,
+  guess: Guess
+}) {
+  try {
+    return db
+      .collection("rounds")
+      .doc(roundId)
+      .collection("guesses")
+      .doc(guess.userName)
+      .set(guess, { merge: true });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
 async function getGames() {
   try {
     const querySnapshot = await db
@@ -62,6 +143,7 @@ async function getGames() {
 async function createLobby(userName: string, ready: boolean = false) {
   try {
     const lobby = await db.collection("lobbies").add({
+      master: userName,
       date: moment().format()
     });
     await db
@@ -167,5 +249,9 @@ export {
   setUserReady,
   listenLobbyUserChanges,
   updateGame,
-  updateLobby
+  updateLobby,
+  saveGuess,
+  createRound,
+  listenToCreateRound,
+  getRound
 };

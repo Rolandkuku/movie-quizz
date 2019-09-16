@@ -11,10 +11,12 @@ async function getCurrentLobby(
     setLobbyLoading(true);
     const lobby = await getLobby(lobbyId);
     setLobby(lobby);
+    setLobbyLoading(false);
+    return lobby;
   } catch (error) {
+    setLobbyLoading(false);
     throw new Error(error);
   }
-  setLobbyLoading(false);
 }
 
 export const lobbyServices = { getCurrentLobby };

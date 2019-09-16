@@ -195,6 +195,7 @@ async function getLobby(lobbyId: string) {
       .collection("users")
       .get();
     return {
+      id: lobbyDoc.id,
       ...lobbyDoc.data(),
       users: usersSnapshot.docs.map(doc => ({
         ...doc.data(),

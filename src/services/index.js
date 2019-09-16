@@ -6,6 +6,7 @@ export * from "./firestore";
 export * from "./local";
 export { lobbyServices } from "./lobby";
 export { roundServices } from "./round";
+export { guessServices } from "./guesse";
 export * from "./listeners";
 
 const buildGet = async url =>

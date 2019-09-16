@@ -1,5 +1,5 @@
 // @flow
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Button,
   Typography,
@@ -16,20 +16,16 @@ import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 import { withRouter } from "react-router-dom";
 
 import { Timer, Poster } from ".";
-import {
-  getRandPopularMovie,
-  getRandPopularPerson,
-  getPerson
-} from "../services/index";
-import { getRandomInt, makeFreshGame } from "../utils";
+import { makeFreshGame } from "../utils";
 import {
   saveGame,
   lobbyServices,
   getName,
-  createRound,
   listenToCreateRound,
+  listenToGuesses,
   roundServices,
-  saveGuess
+  saveGuess,
+  guessServices
 } from "../services";
 import type { Game as GameType } from "../types";
 
@@ -63,47 +59,11 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-let game: GameType = makeFreshGame();
-
-async function createNewRound(setRound, setLoading, setError, lobbyId, timer) {
-  setLoading(true);
-  try {
-    setError(null);
-    const shouldPickPersonFromCast = getRandomInt(2);
-    const movie = await getRandPopularMovie();
-    const person = shouldPickPersonFromCast
-      ? await getPerson(movie.cast[getRandomInt(movie.cast.length)])
-      : await getRandPopularPerson();
-    const round = {
-      movie,
-      person,
-      lobbyId,
-      playsIn: movie.cast.indexOf(person.id) !== -1,
-      timer
-    };
-    await createRound(round);
-    setRound(round);
-  } catch (e) {
-    setError(e);
-  }
-  setLoading(false);
-}
-
-async function onSaveGame(game: Game, setLoading, setError) {
-  setLoading(true);
-  try {
-    await saveGame(game);
-    setError(null);
-    return true;
-  } catch (error) {
-    setError(error.message);
-  }
-  setLoading(false);
-  return false;
-}
-
 function GameComponent({ history, onSaveCurrentGame }) {
   const lobbyId = window.location.hash.split("/")[2];
+  if (!lobbyId) {
+    history.push("/");
+  }
   const [userName, setUserName] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -115,56 +75,14 @@ function GameComponent({ history, onSaveCurrentGame }) {
     playsIn: false
   });
   const roundListener = useRef(null);
+  const guessesListener = useRef(null);
   const classes = useStyles();
   // Data for timer
   const intervalId = useRef(null);
   const [time, setTime] = useState(0);
   // Load data for the next round.
   async function loadData() {
-    createNewRound(setRound, setRoundLoading, setError, lobbyId, time);
-  }
-
-  const getRound = useCallback(
-    roundId => {
-      if (lobby && lobbyId && !roundLoading) {
-        roundServices.getRound(
-          setRound,
-          setLoading,
-          roundId || lobby.lastRound,
-          lobbyId
-        );
-      }
-    },
-    [lobby, lobbyId, roundLoading]
-  );
-
-  // Save guess if correct.
-  async function onMakeAGuess(guess: boolean) {
-    const { playsIn, movie, person } = round;
-    const guessedRight = guess === playsIn;
-    console.log(round);
-    if (round.id && lobbyId) {
-      await saveGuess({
-        roundId: round.id,
-        lobbyId,
-        guess: { guessedRight, userName }
-      });
-    }
-    // game = updateGame(game, person, movie, time, guessedRight);
-    // if (guessedRight) {
-    //   loadData();
-    // } else {
-    //   if (await onSaveGame(game, setLoading, setError)) {
-    //     onSaveCurrentGame(game);
-    //     history.push("/game-resume");
-    //     game = makeFreshGame();
-    //   }
-    // }
-  }
-
-  // Load userName
-  // Redirect to home if not set.
-  useEffect(() => {
+    // Load userName
     if (!userName) {
       const name = getName();
       if (!name) {
@@ -173,48 +91,79 @@ function GameComponent({ history, onSaveCurrentGame }) {
         setUserName(name);
       }
     }
-  }, [userName, history]);
-
-  // Load lobby
-  useEffect(() => {
-    if (lobbyId && !lobby) {
-      lobbyServices.getCurrentLobby(setLobby, setLoading, lobbyId);
+    // Load lobby
+    const lobby = await lobbyServices.getCurrentLobby(
+      setLobby,
+      setLoading,
+      lobbyId
+    );
+    let round;
+    if (lobby.lastRound) {
+      // If round, load it
+      round = await roundServices.getRound(
+        setRound,
+        setRoundLoading,
+        lobby.lastRound,
+        lobbyId
+      );
+    } else if (lobby.master === userName) {
+      // Else, if master, create a new one.
+      round = await roundServices.createNewRound(
+        setRound,
+        setRoundLoading,
+        setError,
+        lobbyId,
+        time
+      );
     }
-  }, [lobby, lobbyId]);
 
-  // Load fresh data upon first load.
+    // Update to new round upon creation
+    if (!roundListener.current) {
+      roundListener.current = listenToCreateRound(lobbyId, () => {
+        roundServices.getRound(
+          setRound,
+          setRoundLoading,
+          lobby.lastRound,
+          lobbyId
+        );
+      });
+    }
+
+    // Listen to guesses and update lobby.
+    if (!guessesListener.current && round) {
+      guessesListener.current = listenToGuesses(lobbyId, round.id, () =>
+        lobbyServices.getCurrentLobby(setLobby, setLoading, lobbyId)
+      );
+    }
+  }
+
+  // Save guess if correct.
+  async function onMakeAGuess(guess: boolean) {
+    const { playsIn } = round;
+    const guessedRight = guess === playsIn;
+    if (round.id && lobbyId) {
+      guessServices.saveGuess(
+        round.id,
+        lobbyId,
+        { guessedRight, userName },
+        setLoading
+      );
+    }
+  }
+
+  // Load rounds if not master.
   useEffect(() => {
-    const { movie, person } = round;
     if (
-      !movie.id &&
-      !person.id &&
-      !roundLoading &&
-      lobby &&
-      lobby.master === userName
+      !round.id &&
+      !lobby &&
+      !listenToGuesses.current &&
+      !listenToCreateRound.current &&
+      !loading &&
+      !roundLoading
     ) {
       loadData();
     }
   });
-
-  // Load rounds if not master.
-  useEffect(() => {
-    if (lobbyId && lobby && lobby.master !== userName) {
-      getRound();
-    }
-  }, [lobbyId, userName, lobby, getRound]);
-
-  // Listen to new rounds if not master.
-  useEffect(() => {
-    if (
-      lobbyId &&
-      lobby &&
-      lobby.master !== userName &&
-      !roundListener.current
-    ) {
-      roundListener.current = listenToCreateRound(lobbyId, getRound);
-      return roundListener.current;
-    }
-  }, [lobbyId, getRound, lobby, roundListener, userName]);
 
   // Timer logic
   useEffect(() => {

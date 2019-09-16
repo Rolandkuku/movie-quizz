@@ -69,6 +69,7 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
   }, [activeIcon]);
 
   async function onNameSubmit(isMulti = false) {
+    // TODO: factorize this.
     if (userNameField) {
       onSetUserName(userNameField);
       if (isMulti) {
@@ -90,7 +91,8 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
             setError(error);
           }
         } else {
-          history.push("/game");
+          const lobby = await createLobby(userNameField, true);
+          history.push(`/game/${lobby.id}`);
         }
       }
     }

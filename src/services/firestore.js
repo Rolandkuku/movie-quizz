@@ -59,7 +59,7 @@ async function getGames() {
   }
 }
 
-async function createLobby(userName: string) {
+async function createLobby(userName: string, ready: boolean = false) {
   try {
     const lobby = await db.collection("lobbies").add({
       date: moment().format()
@@ -72,7 +72,7 @@ async function createLobby(userName: string) {
         name: userName,
         score: 0,
         lives: 3,
-        ready: false
+        ready
       });
     return lobby;
   } catch (e) {

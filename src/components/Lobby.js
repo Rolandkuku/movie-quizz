@@ -14,25 +14,14 @@ import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
 import {
-  getLobby,
   listenLobbyUserChanges,
   setUserReady,
   saveGame,
-  updateLobby
+  updateLobby,
+  lobbyServices
 } from "../services";
 import { makeFreshGame } from "../utils";
 import type { Lobby as LobbyType, User } from "../types";
-
-async function getCurrentLobby(setLobby, setLobbyLoading, lobbyId) {
-  try {
-    setLobbyLoading(true);
-    const lobby = await getLobby(lobbyId);
-    setLobby(lobby);
-  } catch (error) {
-    throw new Error(error);
-  }
-  setLobbyLoading(false);
-}
 
 async function setReady(
   lobbyId: string,
@@ -88,7 +77,7 @@ function LobbyComponent({
   useEffect(() => {
     if (!unsubscribe.current) {
       unsubscribe.current = listenLobbyUserChanges(lobbyId, () => {
-        getCurrentLobby(setLobby, setLobbyLoading, lobbyId);
+        lobbyServices.getCurrentLobby(setLobby, setLobbyLoading, lobbyId);
       });
       return unsubscribe.current;
     }

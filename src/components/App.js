@@ -61,16 +61,6 @@ function App() {
             )}
           />
           <Route
-            path="/game"
-            exact
-            component={() => (
-              <Game
-                onSaveCurrentGame={(game: GameType) => setCurrentGame(game)}
-                userName={userName}
-              />
-            )}
-          />
-          <Route
             path="/game/:id"
             component={() => (
               <Game

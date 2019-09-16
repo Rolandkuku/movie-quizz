@@ -4,6 +4,7 @@ import { getRandomInt } from "../utils";
 
 export * from "./firestore";
 export * from "./local";
+export { lobbyServices } from "./lobby";
 
 const buildGet = async url =>
   axios.get(

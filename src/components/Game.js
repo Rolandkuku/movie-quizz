@@ -1,6 +1,15 @@
 // @flow
 import React, { useEffect, useState, useRef } from "react";
-import { Button, Typography, makeStyles } from "@material-ui/core";
+import {
+  Button,
+  Typography,
+  makeStyles,
+  Table,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableHead
+} from "@material-ui/core";
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
@@ -13,10 +22,14 @@ import {
   getPerson
 } from "../services/index";
 import { getRandomInt, makeFreshGame } from "../utils";
-import { saveGame } from "../services";
+import { saveGame, lobbyServices, getName } from "../services";
 import type { Game as GameType } from "../types";
 
 const useStyles = makeStyles(theme => ({
+  root: {
+    display: "flex",
+    justifyContent: "space-between"
+  },
   title: {
     textAlign: "center"
   },
@@ -112,16 +125,14 @@ function updateGame(
   };
 }
 
-function GameComponent({ history, userName, onSaveCurrentGame }) {
-  if (!userName) {
-    history.replace("/");
-  }
-  game.userName = userName;
+function GameComponent({ history, onSaveCurrentGame }) {
+  const [userName, setUserName] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [person, setPerson] = useState({});
   const [movie, setMovie] = useState({});
   const [playsIn, setPlaysIn] = useState(false);
+  const [lobby, setLobby] = useState(null);
   const classes = useStyles();
   // Data for timer
   const intervalId = useRef(null);
@@ -145,6 +156,29 @@ function GameComponent({ history, userName, onSaveCurrentGame }) {
       }
     }
   }
+
+  // Load userName
+  // Redirect to home if not set.
+  useEffect(() => {
+    if (!userName) {
+      const name = getName();
+      if (!name) {
+        history.push("/");
+      } else {
+        setUserName(name);
+      }
+    }
+  }, [userName, history]);
+
+  // Load lobby
+  useEffect(() => {
+    console.log(lobby);
+    const lobbyId = window.location.hash.split("/")[2];
+    if (lobbyId && !lobby) {
+      lobbyServices.getCurrentLobby(setLobby, setLoading, lobbyId);
+    }
+  }, [lobby]);
+
   // Load fresh data upon first load.
   useEffect(() => {
     if (!movie.id && !person.id) {
@@ -172,42 +206,71 @@ function GameComponent({ history, userName, onSaveCurrentGame }) {
         <Typography variant="h3">
           <Timer>{time}</Timer>
         </Typography>
-        <Typography variant="h3">{`Your score: ${game.score}`}</Typography>
       </div>
-      <div className={classes.picturesContainer}>
-        <Poster
-          loading={loading}
-          path={person.profile_path}
-          name={person.name}
-        />
-        <Typography variant="h2">?</Typography>
-        <Poster loading={loading} path={movie.poster_path} name={movie.title} />
-      </div>
-      <div className={classes.actionsContainer}>
-        <Button
-          disabled={loading}
-          size="large"
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            onMakeAGuess(true);
-          }}
-          className={classes.action}
-        >
-          <CheckRoundedIcon />
-        </Button>
-        <Button
-          size="large"
-          variant="contained"
-          color="secondary"
-          onClick={() => {
-            onMakeAGuess(false);
-          }}
-          disabled={loading}
-          className={classes.action}
-        >
-          <CloseRoundedIcon />
-        </Button>
+      <div className={classes.root}>
+        <div>
+          <div className={classes.picturesContainer}>
+            <Poster
+              loading={loading}
+              path={person.profile_path}
+              name={person.name}
+            />
+            <Typography variant="h2">?</Typography>
+            <Poster
+              loading={loading}
+              path={movie.poster_path}
+              name={movie.title}
+            />
+          </div>
+          <div className={classes.actionsContainer}>
+            <Button
+              disabled={loading}
+              size="large"
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                onMakeAGuess(true);
+              }}
+              className={classes.action}
+            >
+              <CheckRoundedIcon />
+            </Button>
+            <Button
+              size="large"
+              variant="contained"
+              color="secondary"
+              onClick={() => {
+                onMakeAGuess(false);
+              }}
+              disabled={loading}
+              className={classes.action}
+            >
+              <CloseRoundedIcon />
+            </Button>
+          </div>
+        </div>
+        <div>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Player</TableCell>
+                <TableCell>Score</TableCell>
+                <TableCell>Lives</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {lobby
+                ? lobby.users.map(user => (
+                    <TableRow>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.score}</TableCell>
+                      <TableCell>{user.lives}</TableCell>
+                    </TableRow>
+                  ))
+                : null}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

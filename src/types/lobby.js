@@ -1,8 +1,7 @@
 // @flow
-import type { Answer, User } from ".";
+import type { User } from ".";
 
 export type Lobby = {
   users: Array<User>,
-  answers: Array<Answer>,
-  winner: User
+  gameId: string
 };

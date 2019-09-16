@@ -1,5 +1,6 @@
 // @flow
-import { Game } from "../types";
+import moment from "moment";
+import type { Game } from "../types";
 function getRandomInt(max: number) {
   return Math.floor(Math.random() * Math.floor(max));
 }
@@ -8,7 +9,8 @@ const makeFreshGame: () => Game = () => ({
   score: 0,
   timer: 0,
   answers: [],
-  userName: null
+  winner: null,
+  date: moment().format()
 });
 
 export { getRandomInt, makeFreshGame };

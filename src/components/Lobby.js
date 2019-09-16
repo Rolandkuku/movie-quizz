@@ -1,5 +1,6 @@
 // @flow
 import React, { useState, useEffect, useRef } from "react";
+import { withRouter } from "react-router-dom";
 import type { History } from "react-router-dom";
 import {
   List,
@@ -12,8 +13,15 @@ import {
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
-import { getLobby, listenLobbyUserChanges, setUserReady } from "../services";
-import type { Lobby as LobbyType } from "../types";
+import {
+  getLobby,
+  listenLobbyUserChanges,
+  setUserReady,
+  saveGame,
+  updateLobby
+} from "../services";
+import { makeFreshGame } from "../utils";
+import type { Lobby as LobbyType, User } from "../types";
 
 async function getCurrentLobby(setLobby, setLobbyLoading, lobbyId) {
   try {
@@ -41,12 +49,41 @@ async function setReady(
   setLoading(false);
 }
 
-function Lobby({ history, userName }: { history: History, userName: string }) {
+function isEveryBodyReady(users: Array<User>): boolean {
+  return users.every(user => user.ready);
+}
+
+async function createGame(lobbyId: string, setLoading: boolean => any, cb) {
+  setLoading(true);
+  try {
+    const game = await saveGame(makeFreshGame());
+    await updateLobby(lobbyId, { gameId: game.id });
+    cb();
+    return game;
+  } catch (e) {
+    setLoading(false);
+    throw new Error(e);
+  }
+}
+
+function LobbyComponent({
+  history,
+  userName
+}: {
+  history: History,
+  userName: string
+}) {
   const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState(null);
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const unsubscribe = useRef(null);
+
+  useEffect(() => {
+    if (lobby && isEveryBodyReady(lobby.users) && !loading) {
+      createGame(lobbyId, setLoading, () => history.push(`/game/${lobbyId}`));
+    }
+  }, [lobby, lobbyId, loading, history]);
 
   useEffect(() => {
     if (!unsubscribe.current) {
@@ -93,5 +130,7 @@ function Lobby({ history, userName }: { history: History, userName: string }) {
     </div>
   );
 }
+
+const Lobby = withRouter(LobbyComponent);
 
 export { Lobby };

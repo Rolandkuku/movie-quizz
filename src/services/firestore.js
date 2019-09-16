@@ -24,6 +24,27 @@ async function saveGame(game: Game) {
   }
 }
 
+async function getGame(gameId: string) {
+  try {
+    const doc = db
+      .collection("games")
+      .doc(gameId)
+      .get();
+    return doc.data();
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function updateGame(game: Game) {
+  try {
+    const gameDoc = db.collection("games").doc(game.id);
+    return gameDoc.update(game);
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
 async function getGames() {
   try {
     const querySnapshot = await db
@@ -112,6 +133,15 @@ async function setUserReady(lobbyId: string, userId: string, ready: boolean) {
   }
 }
 
+async function updateLobby(lobbyId: string, data: any) {
+  try {
+    const lobbyDoc = db.collection("lobbies").doc(lobbyId);
+    return lobbyDoc.update(data);
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
 function listenLobbyUserChanges(lobbyId: string, cb: (Array<User>) => any) {
   const unsubscribe = db
     .collection("lobbies")
@@ -130,9 +160,12 @@ function listenLobbyUserChanges(lobbyId: string, cb: (Array<User>) => any) {
 export {
   saveGame,
   getGames,
+  getGame,
   createLobby,
   addUserToLobby,
   getLobby,
   setUserReady,
-  listenLobbyUserChanges
+  listenLobbyUserChanges,
+  updateGame,
+  updateLobby
 };

@@ -2,7 +2,7 @@
 import firebase from "firebase/app";
 import "firebase/firestore";
 import moment from "moment";
-import type { Game, Round, User, Movie, Person, Guess } from "../types";
+import type { Game, Movie, Person, Guess } from "../types";
 
 firebase.initializeApp({
   apiKey: "AIzaSyCaStI5D_GU0kN20ZBSwaFlzkoj0Xa6It8",
@@ -11,7 +11,7 @@ firebase.initializeApp({
   databaseURL: "https://movie-quizz-8b93e.firebaseio.com"
 });
 
-const db = firebase.firestore();
+export const db = firebase.firestore();
 
 async function saveGame(game: Game) {
   try {
@@ -66,28 +66,10 @@ async function createRound({
         person,
         timer,
         playsIn,
-        guesses: []
+        date: moment().format()
       });
       lobbyRef.update({ lastRound: roundRef.id });
     });
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
-function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
-  try {
-    return db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("rounds")
-      .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            cb(change.doc.id);
-          }
-        });
-      });
   } catch (e) {
     throw new Error(e);
   }
@@ -101,26 +83,46 @@ async function getRound(roundId: string, lobbyId: string) {
       .collection("rounds")
       .doc(roundId)
       .get();
-    return roundDoc.data();
+    return { id: roundDoc.id, ...roundDoc.data() };
   } catch (e) {
     throw new Error(e);
   }
 }
 
 async function saveGuess({
+  lobbyId,
   roundId,
   guess
 }: {
+  lobbyId: string,
   roundId: string,
   guess: Guess
 }) {
   try {
-    return db
+    const { userName, guessedRight } = guess;
+    const batch = db.batch();
+    const guessRef = db
+      .collection("lobbies")
+      .doc(lobbyId)
       .collection("rounds")
       .doc(roundId)
       .collection("guesses")
-      .doc(guess.userName)
-      .set(guess, { merge: true });
+      .doc(userName);
+    const userRef = db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .collection("users")
+      .doc(userName);
+    batch.set(guessRef, guess, { merge: true });
+    return db.runTransaction(async transaction => {
+      const userDoc = await transaction.get(userRef);
+      const user = userDoc.data();
+      transaction.set(guessRef, guess, { merge: true });
+      return transaction.update(userRef, {
+        score: guessedRight ? user.score + 1 : user.score,
+        lives: guessedRight ? user.lives : user.lives - 1
+      });
+    });
   } catch (e) {
     throw new Error(e);
   }
@@ -150,7 +152,8 @@ async function createLobby(userName: string, ready: boolean = false) {
       .collection("lobbies")
       .doc(lobby.id)
       .collection("users")
-      .add({
+      .doc(userName)
+      .set({
         name: userName,
         score: 0,
         lives: 3,
@@ -168,7 +171,8 @@ async function addUserToLobby(userName: string, lobbyId: string) {
       .collection("lobbies")
       .doc(lobbyId)
       .collection("users")
-      .add({
+      .doc(userName)
+      .set({
         name: userName,
         score: 0,
         lives: 3,
@@ -224,21 +228,6 @@ async function updateLobby(lobbyId: string, data: any) {
   }
 }
 
-function listenLobbyUserChanges(lobbyId: string, cb: (Array<User>) => any) {
-  const unsubscribe = db
-    .collection("lobbies")
-    .doc(lobbyId)
-    .collection("users")
-    .onSnapshot(snapshot => {
-      cb(
-        snapshot
-          .docChanges()
-          .map(change => ({ id: change.doc.id, ...change.doc.data() }))
-      );
-    });
-  return unsubscribe;
-}
-
 export {
   saveGame,
   getGames,
@@ -247,11 +236,9 @@ export {
   addUserToLobby,
   getLobby,
   setUserReady,
-  listenLobbyUserChanges,
   updateGame,
   updateLobby,
   saveGuess,
   createRound,
-  listenToCreateRound,
   getRound
 };

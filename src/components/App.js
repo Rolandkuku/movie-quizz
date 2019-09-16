@@ -4,8 +4,6 @@ import { makeStyles } from "@material-ui/styles";
 
 import { Game, Home, GameResume, Scores, Lobby } from "./";
 import "../styles/App.css";
-import { makeFreshGame } from "../utils";
-import { Game as GameType } from "../types";
 import { setName as setLocalName, getName, unsetName } from "../services";
 
 const useStyles = makeStyles({
@@ -26,7 +24,6 @@ const useStyles = makeStyles({
 
 function App() {
   const classes = useStyles();
-  const [currentGame, setCurrentGame] = useState(makeFreshGame());
   const [userName, setUserName] = useState(null);
 
   useEffect(() => {
@@ -62,19 +59,14 @@ function App() {
           />
           <Route
             path="/game/:id"
-            component={() => (
-              <Game
-                onSaveCurrentGame={(game: GameType) => setCurrentGame(game)}
-                userName={userName}
-              />
-            )}
+            component={() => <Game userName={userName} />}
           />
-          <Route
+          {/* <Route
             path="/game-resume"
             component={() => (
               <GameResume game={currentGame} userName={userName} />
             )}
-          />
+          /> */}
           <Route path="/scores" component={Scores} />
           <Route
             path="/lobby/:id"

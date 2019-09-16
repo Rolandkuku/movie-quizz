@@ -28,7 +28,8 @@ import {
   getName,
   createRound,
   listenToCreateRound,
-  roundServices
+  roundServices,
+  saveGuess
 } from "../services";
 import type { Game as GameType } from "../types";
 
@@ -101,37 +102,6 @@ async function onSaveGame(game: Game, setLoading, setError) {
   return false;
 }
 
-function updateGame(
-  { score, answers, userName },
-  person,
-  movie,
-  time,
-  guessedRight
-) {
-  return {
-    winner: userName,
-    score: score + 1,
-    timer: time,
-    answers: [
-      ...answers,
-      {
-        person: {
-          name: person.name,
-          picture: person.profile_path,
-          id: person.id
-        },
-        movie: {
-          name: movie.title,
-          poster: movie.poster_path,
-          id: movie.id
-        },
-        time: time,
-        guesses: [{ userName, guessedRight }]
-      }
-    ]
-  };
-}
-
 function GameComponent({ history, onSaveCurrentGame }) {
   const lobbyId = window.location.hash.split("/")[2];
   const [userName, setUserName] = useState(null);
@@ -150,7 +120,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
   const intervalId = useRef(null);
   const [time, setTime] = useState(0);
   // Load data for the next round.
-  function loadData() {
+  async function loadData() {
     createNewRound(setRound, setRoundLoading, setError, lobbyId, time);
   }
 
@@ -172,16 +142,24 @@ function GameComponent({ history, onSaveCurrentGame }) {
   async function onMakeAGuess(guess: boolean) {
     const { playsIn, movie, person } = round;
     const guessedRight = guess === playsIn;
-    game = updateGame(game, person, movie, time, guessedRight);
-    if (guessedRight) {
-      loadData();
-    } else {
-      if (await onSaveGame(game, setLoading, setError)) {
-        onSaveCurrentGame(game);
-        history.push("/game-resume");
-        game = makeFreshGame();
-      }
+    console.log(round);
+    if (round.id && lobbyId) {
+      await saveGuess({
+        roundId: round.id,
+        lobbyId,
+        guess: { guessedRight, userName }
+      });
     }
+    // game = updateGame(game, person, movie, time, guessedRight);
+    // if (guessedRight) {
+    //   loadData();
+    // } else {
+    //   if (await onSaveGame(game, setLoading, setError)) {
+    //     onSaveCurrentGame(game);
+    //     history.push("/game-resume");
+    //     game = makeFreshGame();
+    //   }
+    // }
   }
 
   // Load userName

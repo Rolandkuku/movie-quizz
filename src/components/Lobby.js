@@ -70,9 +70,12 @@ function LobbyComponent({
 
   useEffect(() => {
     if (lobby && isEveryBodyReady(lobby.users) && !loading) {
-      createGame(lobbyId, setLoading, () => history.push(`/game/${lobbyId}`));
+      if (lobby.master === userName) {
+        createGame(lobbyId, setLoading, () => history.push(`/game/${lobbyId}`));
+      }
+      history.push(`/game/${lobbyId}`);
     }
-  }, [lobby, lobbyId, loading, history]);
+  }, [lobby, lobbyId, loading, history, userName]);
 
   useEffect(() => {
     if (!unsubscribe.current) {

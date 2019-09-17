@@ -26,7 +26,7 @@ async function saveGame(game: Game) {
 
 async function getGame(gameId: string) {
   try {
-    const doc = db
+    const doc = await db
       .collection("games")
       .doc(gameId)
       .get();
@@ -102,17 +102,11 @@ async function getRound(roundId: string, lobbyId: string) {
   }
 }
 
-async function getGuesses(
-  lobbyId: string,
-  roundId: string
-): Promise<Array<Guess>> {
+async function getGuessesFromRound(roundId: string): Promise<Array<Guess>> {
   try {
     const guessesSnapshot = await db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("rounds")
-      .doc(roundId)
       .collection("guesses")
+      .where("roundId", "==", roundId)
       .get();
     return guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (e) {
@@ -131,29 +125,34 @@ async function saveGuess({
 }) {
   try {
     const { userName, guessedRight } = guess;
-    const batch = db.batch();
-    const guessRef = db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("rounds")
-      .doc(roundId)
-      .collection("guesses")
-      .doc(userName);
+    const guessRef = db.collection("guesses");
     const userRef = db
       .collection("lobbies")
       .doc(lobbyId)
       .collection("users")
       .doc(userName);
-    batch.set(guessRef, guess, { merge: true });
     return db.runTransaction(async transaction => {
       const userDoc = await transaction.get(userRef);
       const user = userDoc.data();
-      transaction.set(guessRef, guess, { merge: true });
+      await guessRef.add({ ...guess, lobbyId, roundId });
       return transaction.update(userRef, {
         score: guessedRight ? user.score + 1 : user.score,
         lives: guessedRight ? user.lives : user.lives - 1
       });
     });
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function getGuessesFromLobby(lobbyId: string) {
+  try {
+    const guessesSnapshot = await db
+      .collection("guesses")
+      .where("lobbyId", "==", lobbyId)
+      .orderBy("time", "desc")
+      .get();
+    return guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (e) {
     throw new Error(e);
   }
@@ -187,7 +186,7 @@ async function createLobby(userName: string, ready: boolean = false) {
       .set({
         name: userName,
         score: 0,
-        lives: 3,
+        lives: 1,
         ready
       });
     return lobby;
@@ -206,7 +205,7 @@ async function addUserToLobby(userName: string, lobbyId: string) {
       .set({
         name: userName,
         score: 0,
-        lives: 3,
+        lives: 1,
         ready: false
       });
   } catch (e) {
@@ -281,5 +280,6 @@ export {
   createRound,
   getRound,
   getUsers,
-  getGuesses
+  getGuessesFromLobby,
+  getGuessesFromRound
 };

@@ -1,7 +1,7 @@
 // @flow
 import {
   saveGuess as dbSaveGuess,
-  getGuesses as dbGetGuesses
+  getGuessesFromRound as dbGetGuesses
 } from "./firestore";
 import type { Guess } from "../types";
 
@@ -27,14 +27,13 @@ async function saveGuess(
 }
 
 async function getGuesses(
-  lobbyId: string,
   roundId: string,
   setGuesses: (Array<Guess>) => any,
   setLoading: boolean => any
 ) {
   setLoading(true);
   try {
-    const guesses = await dbGetGuesses(lobbyId, roundId);
+    const guesses = await dbGetGuesses(roundId);
     setGuesses(guesses);
     setLoading(false);
     return guesses;

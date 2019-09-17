@@ -68,11 +68,19 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
     };
   }, [activeIcon]);
 
-  async function onNameSubmit(isMulti = false) {
+  async function onNameSubmit() {
     // TODO: factorize this.
     if (userNameField) {
       onSetUserName(userNameField);
-      if (isMulti) {
+      if (lobbyId) {
+        try {
+          await addUserToLobby(userNameField, lobbyId);
+          history.push(`/lobby/${lobbyId}`);
+        } catch (error) {
+          setError(error);
+        }
+        setLoading(false);
+      } else {
         try {
           setLoading(true);
           setError(null);
@@ -80,19 +88,6 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
           history.push(`/lobby/${lobby.id}`);
         } catch (error) {
           setError(error);
-        }
-        setLoading(false);
-      } else {
-        if (lobbyId) {
-          try {
-            await addUserToLobby(userNameField, lobbyId);
-            history.push(`/lobby/${lobbyId}`);
-          } catch (error) {
-            setError(error);
-          }
-        } else {
-          const lobby = await createLobby(userNameField, true);
-          history.push(`/game/${lobby.id}`);
         }
       }
     }
@@ -145,20 +140,8 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
             disabled={loading}
             className={classes.action}
           >
-            PLAY !
+            {lobbyId ? "JOIN" : "PLAY !"}
           </Button>
-          {!lobbyId ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              onClick={() => onNameSubmit(true)}
-              disabled={loading}
-              className={classes.action}
-            >
-              Go multi
-            </Button>
-          ) : null}
         </div>
       </form>
       <div className={classes.footer}>

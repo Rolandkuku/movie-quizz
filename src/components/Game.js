@@ -97,32 +97,37 @@ function GameComponent({ history, onSaveCurrentGame }) {
   });
   const [guesses, setGuesses] = useState([]);
   const isMaster = useRef(false);
-  const roundListener = useRef(null);
   const guessesListener = useRef(null);
   const classes = useStyles();
   // Data for timer
   const intervalId = useRef(null);
   const [time, setTime] = useState(0);
 
-  async function endGame(winner) {
+  const endGame = async (user, winner) => {
     const game = await saveGame({
       winner: winner.name,
-      score: winner.score,
-      time
+      user: user.name,
+      score: user.score,
+      time,
+      lobbyId
     });
     history.push(`/game-resume/${game.id}`);
-  }
+  };
 
-  async function checkForNewRound(guesses, users) {
-    if (users && guesses && isMaster.current) {
+  const checkForNewRound = async (guesses, users) => {
+    if (users && guesses) {
       const nbUsersAlive = users.filter(user => user.lives > 0).length;
       const shouldCreateNextRound = guesses.length >= nbUsersAlive;
       const isMulti = users.length > 1;
       const shouldEndGame =
         (isMulti && nbUsersAlive === 1) || (!isMulti && nbUsersAlive === 0);
       if (shouldEndGame) {
-        endGame(isMulti ? users.find(user => user.lives > 0) : users[0]);
-      } else if (isMaster && shouldCreateNextRound && !roundLoading) {
+        const name = getName();
+        endGame(
+          users.find(user => user.name === name),
+          isMulti ? users.find(user => user.lives > 0) : users[0]
+        );
+      } else if (isMaster.current && shouldCreateNextRound && !roundLoading) {
         const newRound = await roundServices.createNewRound(
           setRound,
           setRoundLoading,
@@ -133,7 +138,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
         createGuessesListener(newRound.id);
       }
     }
-  }
+  };
 
   const createGuessesListener = async roundId => {
     if (guessesListener.current) {
@@ -141,9 +146,8 @@ function GameComponent({ history, onSaveCurrentGame }) {
       guessesListener.current = null;
     }
     if (lobbyId && roundId && !guessesListener.current) {
-      guessesListener.current = listenToGuesses(lobbyId, roundId, async () => {
+      guessesListener.current = listenToGuesses(roundId, async () => {
         const guesses = await guessServices.getGuesses(
-          lobbyId,
           roundId,
           setGuesses,
           setLoading
@@ -159,11 +163,11 @@ function GameComponent({ history, onSaveCurrentGame }) {
   };
 
   // Load initial data.
-  async function loadData() {
+  const loadData = async () => {
     // Load userName
     let name;
     if (!userName) {
-      name = getName();
+      name = await getName();
       if (!name) {
         history.push("/");
       } else {
@@ -199,41 +203,31 @@ function GameComponent({ history, onSaveCurrentGame }) {
 
     // Load guesses
     if (round && round.id) {
-      await guessServices.getGuesses(lobbyId, round.id, setGuesses, setLoading);
+      await guessServices.getGuesses(round.id, setGuesses, setLoading);
       createGuessesListener(round.id);
     }
 
     // Load users
     await userServices.getUsers(lobbyId, setUsers, setLoading);
-
-    // Get guesses upon round creation if not master
-    if (!isMaster.current) {
-      let roundId;
-      if (!roundListener.current) {
-        roundListener.current = listenToCreateRound(
-          lobbyId,
-          (_roundId: string) => {
-            roundId = _roundId;
-            roundServices.getRound(setRound, setRoundLoading, roundId, lobbyId);
-
-            createGuessesListener(roundId);
-          }
-        );
-      }
-    }
-  }
+  };
 
   // Save guess if correct.
   async function onMakeAGuess(guess: boolean) {
-    const { playsIn } = round;
+    const { playsIn, movie, person } = round;
     const guessedRight = guess === playsIn;
     if (round.id && lobbyId) {
-      guessServices.saveGuess(
+      await guessServices.saveGuess(
         round.id,
         lobbyId,
-        { guessedRight, userName },
+        { guessedRight, userName, playsIn, movie, person, lobbyId, time },
         setLoading
       );
+      // Update data and listen for future changes.
+      const [guesses, users] = await Promise.all([
+        guessServices.getGuesses(round.id, setGuesses, setLoading),
+        userServices.getUsers(lobbyId, setUsers, setLoading)
+      ]);
+      checkForNewRound(guesses, users);
     }
   }
 
@@ -255,12 +249,11 @@ function GameComponent({ history, onSaveCurrentGame }) {
 
   // Timer logic
   useEffect(() => {
-    intervalId.current = setInterval(() => {
-      setTime(t => t + 1);
-    }, 1000);
-    return () => {
-      clearInterval(intervalId.current);
-    };
+    if (!intervalId.current) {
+      intervalId.current = setInterval(() => {
+        setTime(t => t + 1);
+      }, 1000);
+    }
   });
 
   const shouldEnableButtons = canGuess(guesses, userName, users);

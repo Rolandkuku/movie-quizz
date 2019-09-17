@@ -47,7 +47,7 @@ function GameResumeComponent({ history }) {
     setLoading(true);
     try {
       const _game = await _getGame(gameId);
-      const _guesses = await getGuessesFromLobby(_game.lobbyId);
+      const _guesses = await getGuessesFromLobby(_game.lobbyId, _getName());
       setGuesses(_guesses);
       setGame(_game);
     } catch (error) {
@@ -98,7 +98,7 @@ function GameResumeComponent({ history }) {
             {guesses.length
               ? guesses.map((guess: Guess) => {
                   return (
-                    <TableRow key={guess.id}>
+                    <TableRow key={guess.roundIndex}>
                       <TableCell>{guess.time}</TableCell>
                       <TableCell>{guess.person.name}</TableCell>
                       <TableCell>{guess.movie.title}</TableCell>

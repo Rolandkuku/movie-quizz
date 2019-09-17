@@ -13,47 +13,19 @@ import {
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
-import {
-  listenLobbyUserChanges,
-  setUserReady,
-  saveGame,
-  updateLobby,
-  lobbyServices,
-  userServices
-} from "../services";
-import { makeFreshGame } from "../utils";
+import { listenForLobbyChanges, setUserReady } from "../services";
 import type { Lobby as LobbyType, User } from "../types";
 
-async function setReady(
-  lobbyId: string,
-  userId: string,
-  ready: boolean,
-  setLoading: boolean => any
-) {
+async function setReady(lobbyId: string, userId: string, ready: boolean) {
   try {
-    setLoading(true);
     await setUserReady(lobbyId, userId, ready);
   } catch (error) {
     throw new Error(error);
   }
-  setLoading(false);
 }
 
 function isEveryBodyReady(users: Array<User>): boolean {
-  return users.every(user => user.ready);
-}
-
-async function createGame(lobbyId: string, setLoading: boolean => any, cb) {
-  setLoading(true);
-  try {
-    const game = await saveGame(makeFreshGame());
-    await updateLobby(lobbyId, { gameId: game.id });
-    cb();
-    return game;
-  } catch (e) {
-    setLoading(false);
-    throw new Error(e);
-  }
+  return users.length > 0 && users.every(user => user.ready);
 }
 
 function LobbyComponent({
@@ -64,33 +36,29 @@ function LobbyComponent({
   userName: string
 }) {
   const lobbyId = window.location.hash.split("/")[2];
-  const [lobby, setLobby]: [LobbyType, any] = useState(null);
-  const [users, setUsers] = useState(null);
-  const [lobbyLoading, setLobbyLoading] = useState(false);
+  const [lobby, setLobby]: [LobbyType, any] = useState({
+    users: []
+  });
   const [loading, setLoading] = useState(false);
   const unsubscribe = useRef(null);
 
   useEffect(() => {
-    if (lobby && users && isEveryBodyReady(users) && !loading) {
-      if (lobby.master === userName) {
-        createGame(lobbyId, setLoading, () => history.push(`/game/${lobbyId}`));
-      }
+    if (lobby && lobby.users && isEveryBodyReady(lobby.users) && !loading) {
       history.push(`/game/${lobbyId}`);
     }
-  }, [users, lobbyId, loading, history, userName, lobby]);
+  }, [lobbyId, loading, history, userName, lobby]);
 
   useEffect(() => {
     if (!unsubscribe.current) {
-      unsubscribe.current = listenLobbyUserChanges(lobbyId, () => {
-        userServices.getUsers(lobbyId, setUsers, setLobbyLoading);
-        lobbyServices.getCurrentLobby(setLobby, setLobbyLoading, lobbyId);
+      unsubscribe.current = listenForLobbyChanges(lobbyId, newLobby => {
+        setLobby(newLobby);
       });
       return unsubscribe.current;
     }
   }, [lobbyId]);
 
   function onSetReady(userId: string, ready: boolean) {
-    setReady(lobbyId, userId, ready, setLoading);
+    setReady(lobbyId, userName, ready);
   }
 
   return (
@@ -100,9 +68,9 @@ function LobbyComponent({
         {`${window.location.host}/#/?next=${lobbyId}`}
       </p>
       <List>
-        {users
-          ? users.map(user => (
-              <ListItem key={user.id}>
+        {lobby.users
+          ? lobby.users.map(user => (
+              <ListItem key={user.name}>
                 <ListItemIcon>
                   {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
                 </ListItemIcon>
@@ -112,7 +80,7 @@ function LobbyComponent({
                     <Button
                       color="primary"
                       disabled={loading}
-                      onClick={() => onSetReady(user.id, !user.ready)}
+                      onClick={() => onSetReady(user.name, !user.ready)}
                     >
                       {user.ready ? "Not ready" : "Go !"}
                     </Button>

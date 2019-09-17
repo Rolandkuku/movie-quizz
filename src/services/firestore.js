@@ -36,6 +36,20 @@ async function getGame(gameId: string) {
   }
 }
 
+async function getGames() {
+  try {
+    const querySnapshot = await db
+      .collection("games")
+      .orderBy("score", "desc")
+      .orderBy("time")
+      .limit(10)
+      .get();
+    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
 async function updateGame(game: Game) {
   try {
     const gameDoc = db.collection("games").doc(game.id);
@@ -59,27 +73,20 @@ async function createRound({
   timer: number
 }) {
   try {
-    const lobbyRef = await db.collection("lobbies").doc(lobbyId);
-    return db.runTransaction(async transaction => {
-      const roundRef = await lobbyRef.collection("rounds").add({
-        movie,
-        person,
-        timer,
-        playsIn,
-        date: moment().format()
+    return db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .update({
+        nbRounds: firebase.firestore.FieldValue.increment(1),
+        rounds: firebase.firestore.FieldValue.arrayUnion({
+          movie,
+          person,
+          lobbyId,
+          playsIn,
+          timer,
+          date: moment().format()
+        })
       });
-      lobbyRef.update({ lastRound: roundRef.id });
-      const guessesSnapshot = await roundRef.collection("guesses").get();
-      const roundDoc = await roundRef.get();
-      return {
-        id: roundDoc.id,
-        ...roundDoc.data(),
-        guesses: guessesSnapshot.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        }))
-      };
-    });
   } catch (e) {
     throw new Error(e);
   }
@@ -114,30 +121,22 @@ async function getGuessesFromRound(roundId: string): Promise<Array<Guess>> {
   }
 }
 
-async function saveGuess({
-  lobbyId,
-  roundId,
-  guess
-}: {
-  lobbyId: string,
-  roundId: string,
-  guess: Guess
-}) {
+async function saveGuess(lobbyId: string, guess: Guess, roundDate: string) {
   try {
     const { userName, guessedRight } = guess;
-    const guessRef = db.collection("guesses");
-    const userRef = db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("users")
-      .doc(userName);
-    return db.runTransaction(async transaction => {
-      const userDoc = await transaction.get(userRef);
-      const user = userDoc.data();
-      await guessRef.add({ ...guess, lobbyId, roundId });
-      return transaction.update(userRef, {
-        score: guessedRight ? user.score + 1 : user.score,
-        lives: guessedRight ? user.lives : user.lives - 1
+    const lobbyRef = db.collection("lobbies").doc(lobbyId);
+    return db.runTransaction(async t => {
+      const lobbyDoc = await t.get(lobbyRef);
+      const lobby = lobbyDoc.data();
+      const user = lobby.users.find(user => user.name === userName);
+      user.score = guessedRight ? user.score + 1 : user.score;
+      user.lives = guessedRight ? user.lives : user.lives - 1;
+      await t.update(lobbyRef, {
+        ...lobby,
+        guesses: firebase.firestore.FieldValue.arrayUnion({
+          roundDate,
+          ...guess
+        })
       });
     });
   } catch (e) {
@@ -145,28 +144,16 @@ async function saveGuess({
   }
 }
 
-async function getGuessesFromLobby(lobbyId: string) {
+async function getGuessesFromLobby(lobbyId: string, userName: string) {
   try {
-    const guessesSnapshot = await db
-      .collection("guesses")
-      .where("lobbyId", "==", lobbyId)
-      .orderBy("time", "desc")
+    const lobbyDoc = await db
+      .collection("lobbies")
+      .doc(lobbyId)
       .get();
-    return guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
-async function getGames() {
-  try {
-    const querySnapshot = await db
-      .collection("games")
-      .orderBy("score", "desc")
-      .orderBy("timer")
-      .limit(10)
-      .get();
-    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const lobby = lobbyDoc.data();
+    return lobby.guesses
+      .filter(guess => guess.userName === userName)
+      .sort(guess => guess.time);
   } catch (e) {
     throw new Error(e);
   }
@@ -176,20 +163,20 @@ async function createLobby(userName: string, ready: boolean = false) {
   try {
     const lobby = await db.collection("lobbies").add({
       master: userName,
-      date: moment().format()
+      date: moment().format(),
+      users: [
+        {
+          lives: 3,
+          name: userName,
+          score: 0,
+          ready
+        }
+      ],
+      rounds: [],
+      nbRounds: 0,
+      guesses: []
     });
-    await db
-      .collection("lobbies")
-      .doc(lobby.id)
-      .collection("users")
-      .doc(userName)
-      .set({
-        name: userName,
-        score: 0,
-        lives: 1,
-        ready
-      });
-    return lobby;
+    return { ...lobby, id: lobby.id };
   } catch (e) {
     throw new Error(e);
   }
@@ -200,13 +187,13 @@ async function addUserToLobby(userName: string, lobbyId: string) {
     return await db
       .collection("lobbies")
       .doc(lobbyId)
-      .collection("users")
-      .doc(userName)
-      .set({
-        name: userName,
-        score: 0,
-        lives: 1,
-        ready: false
+      .update({
+        users: firebase.firestore.FieldValue.arrayUnion({
+          name: userName,
+          score: 0,
+          lives: 3,
+          ready: false
+        })
       });
   } catch (e) {
     throw new Error(e);
@@ -244,14 +231,16 @@ async function getUsers(lobbyId: string) {
   }
 }
 
-async function setUserReady(lobbyId: string, userId: string, ready: boolean) {
+async function setUserReady(lobbyId: string, userName: string, ready: boolean) {
   try {
-    return db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("users")
-      .doc(userId)
-      .update({ ready });
+    const lobbyRef = db.collection("lobbies").doc(lobbyId);
+    return db.runTransaction(async t => {
+      const lobbyDoc = await t.get(lobbyRef);
+      const lobby = lobbyDoc.data();
+      const user = lobby.users.find(user => user.name === userName);
+      user.ready = ready;
+      await t.update(lobbyRef, lobby);
+    });
   } catch (e) {
     throw new Error(e);
   }

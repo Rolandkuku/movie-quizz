@@ -35,6 +35,7 @@ function Scores({ history }: { history: any }) {
       fetchGames(setGames, setLoading, setError);
     }
   }, [games]);
+  console.log(games);
   return (
     <div>
       {error ? <p>{error}</p> : null}
@@ -51,19 +52,15 @@ function Scores({ history }: { history: any }) {
             <TableCell>#</TableCell>
             <TableCell>User</TableCell>
             <TableCell>Score</TableCell>
-            <TableCell>Time</TableCell>
             <TableCell>Date</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {games.map(({ id, winner, score, timer, date }: Game, index) => (
+          {games.map(({ id, winner, score, time, date }: Game, index) => (
             <TableRow key={id}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{winner}</TableCell>
               <TableCell>{score}</TableCell>
-              <TableCell>
-                <Timer>{timer}</Timer>
-              </TableCell>
               <TableCell>{moment(date).fromNow()}</TableCell>
             </TableRow>
           ))}

@@ -1,6 +1,6 @@
 // @flow
 import { db } from "./firestore";
-import type { User, Round, Game } from "../types";
+import type { User, Round, Game, Lobby } from "../types";
 
 function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
   try {
@@ -20,17 +20,12 @@ function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
   }
 }
 
-function listenLobbyUserChanges(lobbyId: string, cb: (Array<User>) => any) {
+function listenForLobbyChanges(lobbyId: string, cb: Lobby => any) {
   const unsubscribe = db
     .collection("lobbies")
     .doc(lobbyId)
-    .collection("users")
-    .onSnapshot(snapshot => {
-      cb(
-        snapshot
-          .docChanges()
-          .map(change => ({ id: change.doc.id, ...change.doc.data() }))
-      );
+    .onSnapshot(doc => {
+      cb({ id: doc.id, ...doc.data() });
     });
   return unsubscribe;
 }
@@ -53,7 +48,7 @@ function listenForGameCreation(lobbyId: string, cb: Game => any) {
 }
 
 export {
-  listenLobbyUserChanges,
+  listenForLobbyChanges,
   listenToCreateRound,
   listenToGuesses,
   listenForGameCreation

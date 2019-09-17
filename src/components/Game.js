@@ -1,5 +1,5 @@
 // @flow
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Button,
   Typography,
@@ -17,14 +17,11 @@ import { withRouter } from "react-router-dom";
 
 import { Timer, Poster } from ".";
 import {
-  lobbyServices,
   getName,
-  listenToCreateRound,
-  listenToGuesses,
+  listenForLobbyChanges,
   roundServices,
-  guessServices,
-  userServices,
-  saveGame
+  saveGame,
+  saveGuess
 } from "../services";
 
 const useStyles = makeStyles(theme => ({
@@ -57,15 +54,18 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-function canGuess(guesses, _userName, users) {
-  if (!guesses || !users) {
+function canGuess(guesses = [], _userName, users) {
+  if (!users) {
+    console.log("no data");
     return false;
   }
   if (guesses.filter(({ userName }) => userName === _userName).length) {
+    console.log("already guessed");
     return false;
   }
   const user = users.find(({ name }) => name === _userName);
   if (user && user.lives === 0) {
+    console.log("user is dead");
     return false;
   }
   return true;
@@ -84,166 +84,136 @@ function GameComponent({ history, onSaveCurrentGame }) {
   if (!lobbyId) {
     history.push("/");
   }
-  const [userName, setUserName] = useState(null);
-  const [users, setUsers] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [lobby, setLobby] = useState(null);
-  const [roundLoading, setRoundLoading] = useState(false);
-  const [round, setRound] = useState({
-    movie: {},
-    person: {},
-    playsIn: false
+  const [lobby, setLobby] = useState({
+    users: [],
+    rounds: [],
+    guesses: [],
+    nbRounds: 0,
+    master: null
   });
-  const [guesses, setGuesses] = useState([]);
-  const isMaster = useRef(false);
-  const guessesListener = useRef(null);
+  const [lobbyLoading, setLobbyLoading] = useState(false);
+  const lobbyListener = useRef(null);
   const classes = useStyles();
   // Data for timer
   const intervalId = useRef(null);
   const [time, setTime] = useState(0);
 
-  const endGame = async (user, winner) => {
-    const game = await saveGame({
-      winner: winner.name,
-      user: user.name,
-      score: user.score,
-      time,
-      lobbyId
-    });
-    history.push(`/game-resume/${game.id}`);
-  };
-
-  const checkForNewRound = async (guesses, users) => {
-    if (users && guesses) {
-      const nbUsersAlive = users.filter(user => user.lives > 0).length;
-      const shouldCreateNextRound = guesses.length >= nbUsersAlive;
-      const isMulti = users.length > 1;
-      const shouldEndGame =
-        (isMulti && nbUsersAlive === 1) || (!isMulti && nbUsersAlive === 0);
-      if (shouldEndGame) {
-        const name = getName();
-        endGame(
-          users.find(user => user.name === name),
-          isMulti ? users.find(user => user.lives > 0) : users[0]
-        );
-      } else if (isMaster.current && shouldCreateNextRound && !roundLoading) {
-        const newRound = await roundServices.createNewRound(
-          setRound,
-          setRoundLoading,
-          setError,
-          lobbyId,
-          time
-        );
-        createGuessesListener(newRound.id);
-      }
-    }
-  };
-
-  const createGuessesListener = async roundId => {
-    if (guessesListener.current) {
-      guessesListener.current();
-      guessesListener.current = null;
-    }
-    if (lobbyId && roundId && !guessesListener.current) {
-      guessesListener.current = listenToGuesses(roundId, async () => {
-        const guesses = await guessServices.getGuesses(
-          roundId,
-          setGuesses,
-          setLoading
-        );
-        const users = await userServices.getUsers(
-          lobbyId,
-          setUsers,
-          setLoading
-        );
-        checkForNewRound(guesses, users);
-      });
-    }
-  };
-
-  // Load initial data.
-  const loadData = async () => {
-    // Load userName
-    let name;
-    if (!userName) {
-      name = await getName();
-      if (!name) {
-        history.push("/");
-      } else {
-        setUserName(name);
-      }
-    }
-    // Load lobby
-    const lobby = await lobbyServices.getCurrentLobby(
-      setLobby,
-      setLoading,
-      lobbyId
-    );
-    isMaster.current = lobby.master === name;
-    let round;
-    if (lobby.lastRound) {
-      // If round, load it
-      round = await roundServices.getRound(
-        setRound,
-        setRoundLoading,
-        lobby.lastRound,
-        lobbyId
-      );
-    } else if (isMaster.current) {
-      // Else, if master, create a new one.
-      round = await roundServices.createNewRound(
-        setRound,
-        setRoundLoading,
-        setError,
-        lobbyId,
-        time
-      );
-    }
-
-    // Load guesses
-    if (round && round.id) {
-      await guessServices.getGuesses(round.id, setGuesses, setLoading);
-      createGuessesListener(round.id);
-    }
-
-    // Load users
-    await userServices.getUsers(lobbyId, setUsers, setLoading);
-  };
+  const { rounds, users, guesses, nbRounds } = lobby;
+  const currentRound = rounds[nbRounds - 1];
+  const shouldEnableButtons = canGuess(
+    guesses.filter(guess => guess.roundIndex === nbRounds),
+    getName(),
+    users
+  );
 
   // Save guess if correct.
   async function onMakeAGuess(guess: boolean) {
-    const { playsIn, movie, person } = round;
-    const guessedRight = guess === playsIn;
-    if (round.id && lobbyId) {
-      await guessServices.saveGuess(
-        round.id,
+    const userName = getName();
+    if (
+      !lobby.guesses
+        .filter(guess => guess.roundIndex === lobby.nbRounds)
+        .some(guess => guess.userName === userName)
+    ) {
+      const round = lobby.rounds[0];
+      const { playsIn, date } = round;
+      const guessedRight = guess === playsIn;
+      saveGuess(
         lobbyId,
-        { guessedRight, userName, playsIn, movie, person, lobbyId, time },
-        setLoading
+        {
+          userName: getName(),
+          guessedRight,
+          movie: currentRound.movie,
+          person: currentRound.person,
+          playsIn,
+          time,
+          roundIndex: lobby.nbRounds
+        },
+        date
       );
-      // Update data and listen for future changes.
-      const [guesses, users] = await Promise.all([
-        guessServices.getGuesses(round.id, setGuesses, setLoading),
-        userServices.getUsers(lobbyId, setUsers, setLoading)
-      ]);
-      checkForNewRound(guesses, users);
     }
   }
 
+  const getNextRound = useCallback(async () => {
+    console.log("creating next round");
+    await roundServices.createNewRound(lobbyId, time);
+  }, [lobbyId, time]);
+
+  const checkForNewRound = useCallback(
+    async lobby => {
+      const { users, guesses, nbRounds } = lobby;
+      const nbUsersAlive = users.filter(user => user.lives > 0).length;
+      if (
+        guesses.filter(guess => guess.roundIndex === nbRounds).length ===
+          nbUsersAlive &&
+        users.length > 0 &&
+        guesses.length > 0
+      ) {
+        console.log("New round !");
+        return getNextRound();
+      }
+    },
+    [getNextRound]
+  );
+
+  const checkForEndGame = useCallback(
+    async lobby => {
+      const { users } = lobby;
+      const isMulti = users.length > 1;
+      const nbPlayerAlive = users.filter(user => user.lives > 0).length;
+      if (
+        (isMulti && nbPlayerAlive === 1) ||
+        (!isMulti && nbPlayerAlive === 0)
+      ) {
+        const winner = isMulti ? users.find(user => user.lives > 0) : users[0];
+        const user = users.find(user => user.name === getName());
+        const game = await saveGame({
+          winner: winner.name,
+          user: user.name,
+          score: user.score,
+          time,
+          lobbyId
+        });
+        history.push(`/game-resume/${game.id}`);
+      }
+    },
+    [history, lobbyId, time]
+  );
+
   // Load initial data.
   useEffect(() => {
-    if (
-      !userName &&
-      !round.id &&
-      !lobby &&
-      !users &&
-      !listenToGuesses.current &&
-      !listenToCreateRound.current &&
-      !loading &&
-      !roundLoading
-    ) {
-      loadData();
+    let loading = false;
+    if (!lobby.id) {
+      if (!lobbyListener.current) {
+        lobbyListener.current = listenForLobbyChanges(
+          lobbyId,
+          async newLobby => {
+            setLobby(newLobby);
+            console.log("lobby changed !");
+            console.log(newLobby);
+            const isMaster = newLobby.master === getName();
+            if (
+              newLobby.id &&
+              !newLobby.rounds.length &&
+              !loading &&
+              isMaster
+            ) {
+              loading = true;
+              setLobbyLoading(true);
+              await getNextRound();
+              setLobbyLoading(false);
+              loading = false;
+            }
+            if (!loading && newLobby.rounds.length && isMaster) {
+              loading = true;
+              setLobbyLoading(true);
+              await checkForNewRound(newLobby);
+              setLobbyLoading(false);
+              loading = false;
+            }
+            checkForEndGame(newLobby);
+          }
+        );
+      }
     }
   });
 
@@ -256,11 +226,8 @@ function GameComponent({ history, onSaveCurrentGame }) {
     }
   });
 
-  const shouldEnableButtons = canGuess(guesses, userName, users);
-
   return (
     <div>
-      {error ? <p>{error}</p> : null}
       <div className={classes.gameHUD}>
         <Typography variant="h3">
           <Timer>{time}</Timer>
@@ -270,15 +237,15 @@ function GameComponent({ history, onSaveCurrentGame }) {
         <div>
           <div className={classes.picturesContainer}>
             <Poster
-              loading={loading}
-              path={round.person.profile_path}
-              name={round.person.name}
+              loading={lobbyLoading}
+              path={currentRound ? currentRound.person.profile_path : null}
+              name={currentRound ? currentRound.person.name : null}
             />
             <Typography variant="h2">?</Typography>
             <Poster
-              loading={loading}
-              path={round.movie.poster_path}
-              name={round.movie.title}
+              loading={lobbyLoading}
+              path={currentRound ? currentRound.movie.poster_path : null}
+              name={currentRound ? currentRound.movie.title : null}
             />
           </div>
           <div className={classes.actionsContainer}>
@@ -288,7 +255,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
               variant="contained"
               color="primary"
               onClick={() => {
-                if (!loading) {
+                if (!lobbyLoading) {
                   onMakeAGuess(true);
                 }
               }}
@@ -301,7 +268,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
               variant="contained"
               color="secondary"
               onClick={() => {
-                if (!loading) {
+                if (!lobbyLoading) {
                   onMakeAGuess(false);
                 }
               }}
@@ -323,17 +290,14 @@ function GameComponent({ history, onSaveCurrentGame }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users
-                ? users.map(user => (
-                    <TableRow key={user.id}>
+              {lobby.users
+                ? lobby.users.map(user => (
+                    <TableRow key={user.name}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.score}</TableCell>
                       <TableCell>{user.lives}</TableCell>
                       <TableCell>
-                        <GuessStatus
-                          name={user.name}
-                          guesses={round.guesses || []}
-                        />
+                        <GuessStatus name={user.name} guesses={guesses || []} />
                       </TableCell>
                     </TableRow>
                   ))

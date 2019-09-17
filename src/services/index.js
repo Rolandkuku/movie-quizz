@@ -19,7 +19,7 @@ const buildGet = async url =>
 
 async function getRandPopularMovie() {
   try {
-    // Getting a random popular movie from the 5 firs pages.
+    // Getting a random popular movie from the 5 first pages.
     const popularMovies = await buildGet(
       `movie/popular?page=${getRandomInt(5) + 1}`
     );
@@ -30,7 +30,7 @@ async function getRandPopularMovie() {
     const credits = await buildGet(`movie/${movie.id}/credits`);
     const cast = credits.data.cast;
     for (let person of cast) {
-      movie.cast.push(person.id);
+      movie.cast.push(person);
     }
     return movie;
   } catch (error) {

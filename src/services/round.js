@@ -1,13 +1,13 @@
 // @flow
+import moment from "moment";
 import {
   getRound as getRoundFromDB,
   getRandPopularMovie,
-  getPerson,
   getRandPopularPerson,
   createRound
 } from ".";
 import { getRandomInt } from "../utils";
-import type { Round } from "../types";
+import type { Round, Lobby } from "../types";
 
 async function getRound(
   setRound: Round => any,
@@ -27,36 +27,26 @@ async function getRound(
   }
 }
 
-async function createNewRound(
-  setRound: Round => any,
-  setLoading: boolean => any,
-  setError: (null | string) => any,
-  lobbyId: string,
-  timer: number
-) {
-  setLoading(true);
+async function createNewRound(lobbyId: string, timer: number) {
   try {
-    setError(null);
     const shouldPickPersonFromCast = getRandomInt(2);
     const movie = await getRandPopularMovie();
     const person = shouldPickPersonFromCast
-      ? await getPerson(movie.cast[getRandomInt(movie.cast.length)])
+      ? await movie.cast[getRandomInt(movie.cast.length)]
       : await getRandPopularPerson();
-    const round = {
+    const round: Round = {
       movie,
       person,
       lobbyId,
-      playsIn: movie.cast.indexOf(person.id) !== -1,
-      timer
+      timer,
+      timestamp: moment().format(),
+      playsIn: movie.cast.some(({ id }) => person.id === id)
     };
-    const newRound = await createRound(round);
-    setRound(newRound);
-    setLoading(false);
-    return newRound;
+    const lobby = await createRound(round);
+    return lobby;
   } catch (e) {
-    setError(e);
+    throw new Error(e);
   }
-  setLoading(false);
 }
 
 export const roundServices = { getRound, createNewRound };

@@ -15,5 +15,6 @@ export type Round = {
   playsIn: boolean,
   timer: boolean,
   guesses: Array<Guess>,
+  nbRounds: number,
   +id: string
 };

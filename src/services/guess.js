@@ -5,23 +5,11 @@ import {
 } from "./firestore";
 import type { Guess } from "../types";
 
-async function saveGuess(
-  roundId: string,
-  lobbyId: string,
-  guess: Guess,
-  setLoading: boolean => any
-) {
-  setLoading(true);
+async function saveGuess(roundId: string, guess: Guess, roundDate: string) {
   try {
-    const newGuess = await dbSaveGuess({
-      roundId,
-      lobbyId,
-      guess
-    });
-    setLoading(false);
+    const newGuess = await dbSaveGuess(roundId, guess, roundDate);
     return newGuess;
   } catch (error) {
-    setLoading(false);
     throw new Error(error);
   }
 }

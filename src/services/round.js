@@ -9,24 +9,6 @@ import {
 import { getRandomInt } from "../utils";
 import type { Round, Lobby } from "../types";
 
-async function getRound(
-  setRound: Round => any,
-  setLoading: boolean => any,
-  roundId: string,
-  lobbyId: string
-) {
-  try {
-    setLoading(true);
-    const round = await getRoundFromDB(roundId, lobbyId);
-    setRound(round);
-    setLoading(false);
-    return round;
-  } catch (error) {
-    setLoading(false);
-    throw new Error(error);
-  }
-}
-
 async function createNewRound(lobbyId: string, timer: number) {
   try {
     const shouldPickPersonFromCast = getRandomInt(2);
@@ -49,4 +31,4 @@ async function createNewRound(lobbyId: string, timer: number) {
   }
 }
 
-export const roundServices = { getRound, createNewRound };
+export const roundServices = { createNewRound };

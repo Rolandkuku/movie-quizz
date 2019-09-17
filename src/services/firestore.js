@@ -50,15 +50,6 @@ async function getGames() {
   }
 }
 
-async function updateGame(game: Game) {
-  try {
-    const gameDoc = db.collection("games").doc(game.id);
-    return gameDoc.update(game);
-  } catch (error) {
-    throw new Error(error);
-  }
-}
-
 async function createRound({
   movie,
   person,
@@ -87,35 +78,6 @@ async function createRound({
           date: moment().format()
         })
       });
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
-async function getRound(roundId: string, lobbyId: string) {
-  try {
-    const roundDoc = await db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("rounds")
-      .doc(roundId)
-      .get();
-    return {
-      id: roundDoc.id,
-      ...roundDoc.data()
-    };
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
-async function getGuessesFromRound(roundId: string): Promise<Array<Guess>> {
-  try {
-    const guessesSnapshot = await db
-      .collection("guesses")
-      .where("roundId", "==", roundId)
-      .get();
-    return guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (e) {
     throw new Error(e);
   }
@@ -215,22 +177,6 @@ async function getLobby(lobbyId: string) {
   }
 }
 
-async function getUsers(lobbyId: string) {
-  try {
-    const usersSnapshot = await db
-      .collection("lobbies")
-      .doc(lobbyId)
-      .collection("users")
-      .get();
-    return usersSnapshot.docs.map(doc => ({
-      ...doc.data(),
-      id: doc.id
-    }));
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
 async function setUserReady(lobbyId: string, userName: string, ready: boolean) {
   try {
     const lobbyRef = db.collection("lobbies").doc(lobbyId);
@@ -246,15 +192,6 @@ async function setUserReady(lobbyId: string, userName: string, ready: boolean) {
   }
 }
 
-async function updateLobby(lobbyId: string, data: any) {
-  try {
-    const lobbyDoc = db.collection("lobbies").doc(lobbyId);
-    return lobbyDoc.update(data);
-  } catch (e) {
-    throw new Error(e);
-  }
-}
-
 export {
   saveGame,
   getGames,
@@ -263,12 +200,7 @@ export {
   addUserToLobby,
   getLobby,
   setUserReady,
-  updateGame,
-  updateLobby,
   saveGuess,
   createRound,
-  getRound,
-  getUsers,
-  getGuessesFromLobby,
-  getGuessesFromRound
+  getGuessesFromLobby
 };

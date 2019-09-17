@@ -1,13 +1,8 @@
 // @flow
 import moment from "moment";
-import {
-  getRound as getRoundFromDB,
-  getRandPopularMovie,
-  getRandPopularPerson,
-  createRound
-} from ".";
+import { getRandPopularMovie, getRandPopularPerson, createRound } from ".";
 import { getRandomInt } from "../utils";
-import type { Round, Lobby } from "../types";
+import type { Round } from "../types";
 
 async function createNewRound(lobbyId: string, timer: number) {
   try {

@@ -27,7 +27,7 @@ import {
 const useStyles = makeStyles(theme => ({
   root: {
     display: "flex",
-    justifyContent: "space-between"
+    justifyContent: "space-around"
   },
   title: {
     textAlign: "center"
@@ -69,14 +69,6 @@ function canGuess(guesses = [], _userName, users) {
     return false;
   }
   return true;
-}
-
-function GuessStatus({ guesses, name }) {
-  const guess = guesses.filter(({ userName }) => userName === name)[0];
-  if (!guess) {
-    return <span>Guessing</span>;
-  }
-  return <span>{guess.guessedRight ? "so good" : "so bad"}</span>;
 }
 
 function GameComponent({ history, onSaveCurrentGame }) {
@@ -226,6 +218,14 @@ function GameComponent({ history, onSaveCurrentGame }) {
     }
   });
 
+  const renderLives = nbLives => {
+    const hearts = [];
+    for (var i = 0; i < nbLives; i++) {
+      hearts.push("❤️");
+    }
+    return hearts;
+  };
+
   return (
     <div>
       <div className={classes.gameHUD}>
@@ -286,7 +286,6 @@ function GameComponent({ history, onSaveCurrentGame }) {
                 <TableCell>Player</TableCell>
                 <TableCell>Score</TableCell>
                 <TableCell>Lives</TableCell>
-                <TableCell>Guessed</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -295,10 +294,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
                     <TableRow key={user.name}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.score}</TableCell>
-                      <TableCell>{user.lives}</TableCell>
-                      <TableCell>
-                        <GuessStatus name={user.name} guesses={guesses || []} />
-                      </TableCell>
+                      <TableCell>{renderLives(user.lives)}</TableCell>
                     </TableRow>
                   ))
                 : null}

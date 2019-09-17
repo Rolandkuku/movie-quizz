@@ -8,13 +8,21 @@ import {
   ListItemText,
   ListItemIcon,
   ListItemSecondaryAction,
-  Button
+  Button,
+  Typography,
+  makeStyles
 } from "@material-ui/core";
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
 import { listenForLobbyChanges, setUserReady } from "../services";
 import type { Lobby as LobbyType, User } from "../types";
+
+const useStyles = makeStyles(theme => ({
+  button: {
+    margin: theme.spacing(1)
+  }
+}));
 
 async function setReady(lobbyId: string, userId: string, ready: boolean) {
   try {
@@ -35,18 +43,19 @@ function LobbyComponent({
   history: History,
   userName: string
 }) {
+  const classes = useStyles();
   const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState({
     users: []
   });
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const unsubscribe = useRef(null);
 
   useEffect(() => {
-    if (lobby && lobby.users && isEveryBodyReady(lobby.users) && !loading) {
+    if (lobby && lobby.users && isEveryBodyReady(lobby.users)) {
       history.push(`/game/${lobbyId}`);
     }
-  }, [lobbyId, loading, history, userName, lobby]);
+  }, [lobbyId, history, userName, lobby]);
 
   useEffect(() => {
     if (!unsubscribe.current) {
@@ -61,13 +70,29 @@ function LobbyComponent({
     setReady(lobbyId, userName, ready);
   }
 
+  const link = `${window.location.host}/#/?next=${lobbyId}`;
+
+  const [btnLabel, setBtnLabel] = useState("Copy");
+
   return (
     <div>
-      <p>
-        Lobby invite friends with this link:{" "}
-        {`${window.location.host}/#/?next=${lobbyId}`}
-      </p>
-      <List>
+      <h2>Lobby</h2>
+      <Typography>
+        {`Invite friends with this link: ${link}`}
+        <Button
+          className={classes.button}
+          color="default"
+          variant="contained"
+          size="small"
+          onClick={async () => {
+            await navigator.clipboard.writeText(link);
+            setBtnLabel("Copied");
+          }}
+        >
+          {btnLabel}
+        </Button>
+      </Typography>
+      <List subheader="Players">
         {lobby.users
           ? lobby.users.map(user => (
               <ListItem key={user.name}>
@@ -78,8 +103,9 @@ function LobbyComponent({
                 {userName === user.name ? (
                   <ListItemSecondaryAction>
                     <Button
-                      color="primary"
+                      color={user.ready ? "default" : "primary"}
                       disabled={loading}
+                      variant="contained"
                       onClick={() => onSetReady(user.name, !user.ready)}
                     >
                       {user.ready ? "Not ready" : "Go !"}

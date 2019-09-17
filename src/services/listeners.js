@@ -1,6 +1,6 @@
 // @flow
 import { db } from "./firestore";
-import type { User, Round, Game, Lobby } from "../types";
+import type { Round, Game, Lobby } from "../types";
 
 function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
   try {

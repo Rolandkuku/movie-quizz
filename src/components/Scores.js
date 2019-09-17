@@ -12,7 +12,6 @@ import moment from "moment";
 
 import { getGames } from "../services";
 import type { Game } from "../types";
-import { Timer } from "../components";
 
 async function fetchGames(setGames, setLoading, setError) {
   setLoading(true);

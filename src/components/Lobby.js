@@ -21,6 +21,17 @@ import type { Lobby as LobbyType, User } from "../types";
 const useStyles = makeStyles(theme => ({
   button: {
     margin: theme.spacing(1)
+  },
+  title: {
+    marginBottom: theme.spacing(3)
+  },
+  listContainer: {
+    marginTop: theme.spacing(6),
+    display: "flex",
+    justifyContent: "center"
+  },
+  list: {
+    flexGrow: 0.6
   }
 }));
 
@@ -76,8 +87,10 @@ function LobbyComponent({
 
   return (
     <div>
-      <h2>Lobby</h2>
-      <Typography>
+      <Typography className={classes.title} variant="h2" align="center">
+        Lobby
+      </Typography>
+      <Typography align="center">
         {`Invite friends with this link: ${link}`}
         <Button
           className={classes.button}
@@ -92,30 +105,32 @@ function LobbyComponent({
           {btnLabel}
         </Button>
       </Typography>
-      <List subheader="Players">
-        {lobby.users
-          ? lobby.users.map(user => (
-              <ListItem key={user.name}>
-                <ListItemIcon>
-                  {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
-                </ListItemIcon>
-                <ListItemText primary={user.name} />
-                {userName === user.name ? (
-                  <ListItemSecondaryAction>
-                    <Button
-                      color={user.ready ? "default" : "primary"}
-                      disabled={loading}
-                      variant="contained"
-                      onClick={() => onSetReady(user.name, !user.ready)}
-                    >
-                      {user.ready ? "Not ready" : "Go !"}
-                    </Button>
-                  </ListItemSecondaryAction>
-                ) : null}
-              </ListItem>
-            ))
-          : null}
-      </List>
+      <div className={classes.listContainer}>
+        <List className={classes.list} subheader="Players">
+          {lobby.users
+            ? lobby.users.map(user => (
+                <ListItem key={user.name}>
+                  <ListItemIcon>
+                    {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
+                  </ListItemIcon>
+                  <ListItemText primary={user.name} />
+                  {userName === user.name ? (
+                    <ListItemSecondaryAction>
+                      <Button
+                        color={user.ready ? "default" : "primary"}
+                        disabled={loading}
+                        variant="contained"
+                        onClick={() => onSetReady(user.name, !user.ready)}
+                      >
+                        {user.ready ? "Not ready" : "Go !"}
+                      </Button>
+                    </ListItemSecondaryAction>
+                  ) : null}
+                </ListItem>
+              ))
+            : null}
+        </List>
+      </div>
     </div>
   );
 }

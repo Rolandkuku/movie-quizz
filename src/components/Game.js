@@ -56,16 +56,13 @@ const useStyles = makeStyles(theme => ({
 
 function canGuess(guesses = [], _userName, users) {
   if (!users) {
-    console.log("no data");
     return false;
   }
   if (guesses.filter(({ userName }) => userName === _userName).length) {
-    console.log("already guessed");
     return false;
   }
   const user = users.find(({ name }) => name === _userName);
   if (user && user.lives === 0) {
-    console.log("user is dead");
     return false;
   }
   return true;
@@ -126,7 +123,6 @@ function GameComponent({ history, onSaveCurrentGame }) {
   }
 
   const getNextRound = useCallback(async () => {
-    console.log("creating next round");
     await roundServices.createNewRound(lobbyId, time);
   }, [lobbyId, time]);
 
@@ -140,7 +136,6 @@ function GameComponent({ history, onSaveCurrentGame }) {
         users.length > 0 &&
         guesses.length > 0
       ) {
-        console.log("New round !");
         return getNextRound();
       }
     },
@@ -180,8 +175,6 @@ function GameComponent({ history, onSaveCurrentGame }) {
           lobbyId,
           async newLobby => {
             setLobby(newLobby);
-            console.log("lobby changed !");
-            console.log(newLobby);
             const isMaster = newLobby.master === getName();
             if (
               newLobby.id &&

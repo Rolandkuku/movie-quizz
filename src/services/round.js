@@ -9,7 +9,7 @@ async function createNewRound(lobbyId: string, timer: number) {
     const shouldPickPersonFromCast = getRandomInt(2);
     const movie = await getRandPopularMovie();
     const person = shouldPickPersonFromCast
-      ? await movie.cast[getRandomInt(movie.cast.length)]
+      ? movie.cast[getRandomInt(10)]
       : await getRandPopularPerson();
     const round: Round = {
       movie,

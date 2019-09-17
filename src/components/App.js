@@ -6,7 +6,7 @@ import { Game, Home, GameResume, Scores, Lobby } from "./";
 import "../styles/App.css";
 import { setName as setLocalName, getName, unsetName } from "../services";
 
-const useStyles = makeStyles({
+const useStyles = makeStyles(theme => ({
   root: {
     color: "white",
     padding: "1em",
@@ -20,7 +20,7 @@ const useStyles = makeStyles({
     right: 0,
     position: "fixed"
   }
-});
+}));
 
 function App() {
   const classes = useStyles();

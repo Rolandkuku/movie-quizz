@@ -27,8 +27,14 @@ const useStyles = makeStyles(theme => ({
   },
   footer: {
     position: "fixed",
-    bottom: "0px",
-    padding: theme.spacing(2)
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: theme.spacing(1)
+  },
+  footerText: {
+    textAlign: "center",
+    marginBottom: 0
   },
   action: {
     margin: theme.spacing(1)
@@ -145,8 +151,24 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
         </div>
       </form>
       <div className={classes.footer}>
-        <Link to="/scores">High scores</Link>
-        {userName ? <Button onClick={onUnsetUserName}>Logout</Button> : null}
+        <p className={classes.footerText}>
+          <Link to="/scores">High scores</Link>
+          {" - "}
+          <a
+            href="https://www.themoviedb.org"
+            rel="noopener noreferrer"
+            target="_blank"
+            // className={classes.tmdbLink}
+          >
+            Data from the TMDB
+          </a>
+          {userName ? (
+            <React.Fragment>
+              {" - "}
+              <Button onClick={onUnsetUserName}>Logout</Button>
+            </React.Fragment>
+          ) : null}
+        </p>
       </div>
     </div>
   );

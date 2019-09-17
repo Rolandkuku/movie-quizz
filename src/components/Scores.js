@@ -34,7 +34,6 @@ function Scores({ history }: { history: any }) {
       fetchGames(setGames, setLoading, setError);
     }
   }, [games]);
-  console.log(games);
   return (
     <div>
       {error ? <p>{error}</p> : null}

@@ -49,8 +49,10 @@ async function createNewRound(
       playsIn: movie.cast.indexOf(person.id) !== -1,
       timer
     };
-    await createRound(round);
-    setRound(round);
+    const newRound = await createRound(round);
+    setRound(newRound);
+    setLoading(false);
+    return newRound;
   } catch (e) {
     setError(e);
   }

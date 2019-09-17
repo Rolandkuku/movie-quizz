@@ -61,12 +61,10 @@ function App() {
             path="/game/:id"
             component={() => <Game userName={userName} />}
           />
-          {/* <Route
+          <Route
             path="/game-resume"
-            component={() => (
-              <GameResume game={currentGame} userName={userName} />
-            )}
-          /> */}
+            component={() => <GameResume userName={userName} />}
+          />
           <Route path="/scores" component={Scores} />
           <Route
             path="/lobby/:id"

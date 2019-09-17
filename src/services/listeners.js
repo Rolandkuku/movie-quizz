@@ -1,6 +1,7 @@
 // @flow
 import { db } from "./firestore";
-import type { User, Round, Guess } from "../types";
+import { getRound } from "./firestore";
+import type { User, Round } from "../types";
 
 function listenToCreateRound(lobbyId: string, cb: (round: Round) => any) {
   try {
@@ -35,7 +36,7 @@ function listenLobbyUserChanges(lobbyId: string, cb: (Array<User>) => any) {
   return unsubscribe;
 }
 
-function listenToGuesses(lobbyId: string, roundId: string, cb: () => any) {
+function listenToGuesses(lobbyId: string, roundId: string, cb: Round => any) {
   return db
     .collection("lobbies")
     .doc(lobbyId)

@@ -60,7 +60,7 @@ async function createRound({
 }) {
   try {
     const lobbyRef = await db.collection("lobbies").doc(lobbyId);
-    await db.runTransaction(async transaction => {
+    return db.runTransaction(async transaction => {
       const roundRef = await lobbyRef.collection("rounds").add({
         movie,
         person,
@@ -69,6 +69,16 @@ async function createRound({
         date: moment().format()
       });
       lobbyRef.update({ lastRound: roundRef.id });
+      const guessesSnapshot = await roundRef.collection("guesses").get();
+      const roundDoc = await roundRef.get();
+      return {
+        id: roundDoc.id,
+        ...roundDoc.data(),
+        guesses: guessesSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id
+        }))
+      };
     });
   } catch (e) {
     throw new Error(e);
@@ -83,7 +93,19 @@ async function getRound(roundId: string, lobbyId: string) {
       .collection("rounds")
       .doc(roundId)
       .get();
-    return { id: roundDoc.id, ...roundDoc.data() };
+    // TODO: this should have its own service.
+    const guessesSnapshot = await db
+      .collection("lobbies")
+      .doc(lobbyId)
+      .collection("rounds")
+      .doc(roundId)
+      .collection("guesses")
+      .get();
+    return {
+      id: roundDoc.id,
+      ...roundDoc.data(),
+      guesses: guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
+    };
   } catch (e) {
     throw new Error(e);
   }
@@ -189,19 +211,26 @@ async function getLobby(lobbyId: string) {
       .collection("lobbies")
       .doc(lobbyId)
       .get();
+    return {
+      id: lobbyDoc.id,
+      ...lobbyDoc.data()
+    };
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function getUsers(lobbyId: string) {
+  try {
     const usersSnapshot = await db
       .collection("lobbies")
       .doc(lobbyId)
       .collection("users")
       .get();
-    return {
-      id: lobbyDoc.id,
-      ...lobbyDoc.data(),
-      users: usersSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }))
-    };
+    return usersSnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    }));
   } catch (e) {
     throw new Error(e);
   }
@@ -241,5 +270,6 @@ export {
   updateLobby,
   saveGuess,
   createRound,
-  getRound
+  getRound,
+  getUsers
 };

@@ -1,7 +1,9 @@
 // @flow
 function setName(name: string) {
   try {
-    localStorage.setItem("name", name);
+    if (name) {
+      localStorage.setItem("name", name);
+    }
   } catch (error) {
     throw new Error(error);
   }

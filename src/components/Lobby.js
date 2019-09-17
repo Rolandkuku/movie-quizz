@@ -18,7 +18,8 @@ import {
   setUserReady,
   saveGame,
   updateLobby,
-  lobbyServices
+  lobbyServices,
+  userServices
 } from "../services";
 import { makeFreshGame } from "../utils";
 import type { Lobby as LobbyType, User } from "../types";
@@ -64,22 +65,24 @@ function LobbyComponent({
 }) {
   const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState(null);
+  const [users, setUsers] = useState(null);
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const unsubscribe = useRef(null);
 
   useEffect(() => {
-    if (lobby && isEveryBodyReady(lobby.users) && !loading) {
+    if (lobby && users && isEveryBodyReady(users) && !loading) {
       if (lobby.master === userName) {
         createGame(lobbyId, setLoading, () => history.push(`/game/${lobbyId}`));
       }
       history.push(`/game/${lobbyId}`);
     }
-  }, [lobby, lobbyId, loading, history, userName]);
+  }, [users, lobbyId, loading, history, userName, lobby]);
 
   useEffect(() => {
     if (!unsubscribe.current) {
       unsubscribe.current = listenLobbyUserChanges(lobbyId, () => {
+        userServices.getUsers(lobbyId, setUsers, setLobbyLoading);
         lobbyServices.getCurrentLobby(setLobby, setLobbyLoading, lobbyId);
       });
       return unsubscribe.current;
@@ -97,8 +100,8 @@ function LobbyComponent({
         {`${window.location.host}/#/?next=${lobbyId}`}
       </p>
       <List>
-        {lobby
-          ? lobby.users.map(user => (
+        {users
+          ? users.map(user => (
               <ListItem key={user.id}>
                 <ListItemIcon>
                   {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}

@@ -1,5 +1,8 @@
 // @flow
-import { saveGuess as dbSaveGuess } from "./firestore";
+import {
+  saveGuess as dbSaveGuess,
+  getGuesses as dbGetGuesses
+} from "./firestore";
 import type { Guess } from "../types";
 
 async function saveGuess(
@@ -23,4 +26,22 @@ async function saveGuess(
   }
 }
 
-export const guessServices = { saveGuess };
+async function getGuesses(
+  lobbyId: string,
+  roundId: string,
+  setGuesses: (Array<Guess>) => any,
+  setLoading: boolean => any
+) {
+  setLoading(true);
+  try {
+    const guesses = await dbGetGuesses(lobbyId, roundId);
+    setGuesses(guesses);
+    setLoading(false);
+    return guesses;
+  } catch (error) {
+    setLoading(false);
+    throw new Error(error);
+  }
+}
+
+export const guessServices = { saveGuess, getGuesses };

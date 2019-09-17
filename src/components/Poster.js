@@ -40,7 +40,7 @@ function Poster({
   name: string
 }) {
   const classes = useStyles();
-  return loading || (!path || !name) ? (
+  return loading && (!path || !name) ? (
     <Skeleton
       className={classes.pictureContainer}
       variant="rect"

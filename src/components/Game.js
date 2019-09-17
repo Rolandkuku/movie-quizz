@@ -57,11 +57,11 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-function canGuess(round, _userName, users) {
-  if (!round || !round.guesses || !users) {
+function canGuess(guesses, _userName, users) {
+  if (!guesses || !users) {
     return false;
   }
-  if (round.guesses.filter(({ userName }) => userName === _userName).length) {
+  if (guesses.filter(({ userName }) => userName === _userName).length) {
     return false;
   }
   const user = users.find(({ name }) => name === _userName);
@@ -95,6 +95,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
     person: {},
     playsIn: false
   });
+  const [guesses, setGuesses] = useState([]);
   const isMaster = useRef(false);
   const roundListener = useRef(null);
   const guessesListener = useRef(null);
@@ -112,10 +113,10 @@ function GameComponent({ history, onSaveCurrentGame }) {
     history.push(`/game-resume/${game.id}`);
   }
 
-  async function checkForNewRound(round, users) {
-    if (users && round && round.guesses && isMaster.current) {
+  async function checkForNewRound(guesses, users) {
+    if (users && guesses && isMaster.current) {
       const nbUsersAlive = users.filter(user => user.lives > 0).length;
-      const shouldCreateNextRound = round.guesses.length >= nbUsersAlive;
+      const shouldCreateNextRound = guesses.length >= nbUsersAlive;
       const isMulti = users.length > 1;
       const shouldEndGame =
         (isMulti && nbUsersAlive === 1) || (!isMulti && nbUsersAlive === 0);
@@ -141,18 +142,18 @@ function GameComponent({ history, onSaveCurrentGame }) {
     }
     if (lobbyId && roundId && !guessesListener.current) {
       guessesListener.current = listenToGuesses(lobbyId, roundId, async () => {
-        const newRound = await roundServices.getRound(
-          setRound,
-          setLoading,
+        const guesses = await guessServices.getGuesses(
+          lobbyId,
           roundId,
-          lobbyId
+          setGuesses,
+          setLoading
         );
         const users = await userServices.getUsers(
           lobbyId,
           setUsers,
           setLoading
         );
-        checkForNewRound(newRound, users);
+        checkForNewRound(guesses, users);
       });
     }
   };
@@ -176,9 +177,10 @@ function GameComponent({ history, onSaveCurrentGame }) {
       lobbyId
     );
     isMaster.current = lobby.master === name;
+    let round;
     if (lobby.lastRound) {
       // If round, load it
-      await roundServices.getRound(
+      round = await roundServices.getRound(
         setRound,
         setRoundLoading,
         lobby.lastRound,
@@ -186,7 +188,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
       );
     } else if (isMaster.current) {
       // Else, if master, create a new one.
-      await roundServices.createNewRound(
+      round = await roundServices.createNewRound(
         setRound,
         setRoundLoading,
         setError,
@@ -195,21 +197,29 @@ function GameComponent({ history, onSaveCurrentGame }) {
       );
     }
 
+    // Load guesses
+    if (round && round.id) {
+      await guessServices.getGuesses(lobbyId, round.id, setGuesses, setLoading);
+      createGuessesListener(round.id);
+    }
+
     // Load users
     await userServices.getUsers(lobbyId, setUsers, setLoading);
 
-    // Update to new round upon creation
-    let roundId;
-    if (!roundListener.current) {
-      roundListener.current = listenToCreateRound(
-        lobbyId,
-        (_roundId: string) => {
-          roundId = _roundId;
-          roundServices.getRound(setRound, setRoundLoading, roundId, lobbyId);
+    // Get guesses upon round creation if not master
+    if (!isMaster.current) {
+      let roundId;
+      if (!roundListener.current) {
+        roundListener.current = listenToCreateRound(
+          lobbyId,
+          (_roundId: string) => {
+            roundId = _roundId;
+            roundServices.getRound(setRound, setRoundLoading, roundId, lobbyId);
 
-          createGuessesListener(roundId);
-        }
-      );
+            createGuessesListener(roundId);
+          }
+        );
+      }
     }
   }
 
@@ -227,7 +237,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
     }
   }
 
-  // Load rounds if not master.
+  // Load initial data.
   useEffect(() => {
     if (
       !userName &&
@@ -253,7 +263,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
     };
   });
 
-  const shouldEnableButtons = canGuess(round, userName, users);
+  const shouldEnableButtons = canGuess(guesses, userName, users);
 
   return (
     <div>
@@ -280,12 +290,14 @@ function GameComponent({ history, onSaveCurrentGame }) {
           </div>
           <div className={classes.actionsContainer}>
             <Button
-              disabled={loading || !shouldEnableButtons}
+              disabled={!shouldEnableButtons}
               size="large"
               variant="contained"
               color="primary"
               onClick={() => {
-                onMakeAGuess(true);
+                if (!loading) {
+                  onMakeAGuess(true);
+                }
               }}
               className={classes.action}
             >
@@ -296,9 +308,11 @@ function GameComponent({ history, onSaveCurrentGame }) {
               variant="contained"
               color="secondary"
               onClick={() => {
-                onMakeAGuess(false);
+                if (!loading) {
+                  onMakeAGuess(false);
+                }
               }}
-              disabled={loading || !shouldEnableButtons}
+              disabled={!shouldEnableButtons}
               className={classes.action}
             >
               <CloseRoundedIcon />

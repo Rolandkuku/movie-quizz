@@ -93,7 +93,20 @@ async function getRound(roundId: string, lobbyId: string) {
       .collection("rounds")
       .doc(roundId)
       .get();
-    // TODO: this should have its own service.
+    return {
+      id: roundDoc.id,
+      ...roundDoc.data()
+    };
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+async function getGuesses(
+  lobbyId: string,
+  roundId: string
+): Promise<Array<Guess>> {
+  try {
     const guessesSnapshot = await db
       .collection("lobbies")
       .doc(lobbyId)
@@ -101,11 +114,7 @@ async function getRound(roundId: string, lobbyId: string) {
       .doc(roundId)
       .collection("guesses")
       .get();
-    return {
-      id: roundDoc.id,
-      ...roundDoc.data(),
-      guesses: guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
-    };
+    return guessesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (e) {
     throw new Error(e);
   }
@@ -271,5 +280,6 @@ export {
   saveGuess,
   createRound,
   getRound,
-  getUsers
+  getUsers,
+  getGuesses
 };

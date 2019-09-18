@@ -20,7 +20,7 @@ const useStyles = makeStyles(theme => ({
     padding: theme.spacing(1)
   },
   button: {
-    margin: theme.spacing(2)
+    marginBottom: theme.spacing(2)
   }
 }));
 
@@ -68,14 +68,20 @@ function Scores({ history }: { history: any }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {games.map(({ id, winner, score, time, date }: Game, index) => (
-              <TableRow key={id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{winner}</TableCell>
-                <TableCell>{score}</TableCell>
-                <TableCell>{moment(date).fromNow()}</TableCell>
+            {loading ? (
+              <TableRow>
+                <TableCell>Loading...</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              games.map(({ id, winner, score, time, date }: Game, index) => (
+                <TableRow key={id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{winner}</TableCell>
+                  <TableCell>{score}</TableCell>
+                  <TableCell>{moment(date).fromNow()}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Paper>

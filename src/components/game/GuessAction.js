@@ -23,6 +23,9 @@ const useStyles = makeStyles(theme => ({
   },
   action: {
     margin: theme.spacing(2)
+  },
+  question: {
+    marginBottom: theme.spacing(2)
   }
 }));
 
@@ -55,6 +58,11 @@ function GuessAction({
           name={round ? round.movie.title : null}
         />
       </div>
+      <Typography className={classes.question} align="center" variant="h4">
+        {round
+          ? `Did ${round.person.name} play in ${round.movie.title}?`
+          : "Loading"}
+      </Typography>
       <div className={classes.actionsContainer}>
         <Button
           disabled={!shouldEnableButtons}

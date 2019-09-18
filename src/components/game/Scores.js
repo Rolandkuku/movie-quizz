@@ -15,6 +15,7 @@ import type { User } from "../../types";
 
 const useStyles = makeStyles(theme => ({
   root: {
+    marginTop: theme.spacing(2),
     paddingBottom: theme.spacing(2)
   }
 }));

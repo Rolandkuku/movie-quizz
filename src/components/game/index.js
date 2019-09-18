@@ -17,10 +17,10 @@ import {
 
 const useStyles = makeStyles(theme => ({
   title: {
-    textAlign: "center"
+    marginBottom: theme.spacing(4)
   },
   gameHUD: {
-    padding: theme.spacing(2)
+    marginBottom: theme.spacing(2)
   }
 }));
 
@@ -185,11 +185,9 @@ function GameComponent({ history, onSaveCurrentGame }) {
 
   return (
     <div>
-      <div className={classes.gameHUD}>
-        <Typography variant="h3">
-          <Timer>{time}</Timer>
-        </Typography>
-      </div>
+      <Typography className={classes.title} variant="h2" align="center">
+        Movie Quizz
+      </Typography>
       <Grid container justify="center">
         <Grid item md={8}>
           <GuessAction
@@ -199,7 +197,12 @@ function GameComponent({ history, onSaveCurrentGame }) {
             onMakeAGuess={onMakeAGuess}
           />
         </Grid>
-        <Grid item sm={8} md={4}>
+        <Grid alignItems="center" item sm={8} md={4}>
+          <div className={classes.gameHUD}>
+            <Typography>
+              Timer: <Timer>{time}</Timer>
+            </Typography>
+          </div>
           <Scores users={lobby.users} />
         </Grid>
       </Grid>

@@ -79,7 +79,7 @@ function LobbyComponent({ history }: { history: History }) {
     setReady(lobbyId, userName, ready);
   }
 
-  const link = `${window.location.host}/#/?next=${lobbyId}`;
+  const link = `${window.location.host}${window.location.pathname}#?next=${lobbyId}`;
 
   const [btnLabel, setBtnLabel] = useState("Copy");
 

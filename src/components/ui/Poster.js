@@ -2,7 +2,7 @@
 import React from "react";
 import Skeleton from "@material-ui/lab/Skeleton";
 import { Paper, makeStyles } from "@material-ui/core";
-import { BASE_TMDB_POSTER_URL } from "../config/constants";
+import { BASE_TMDB_POSTER_URL } from "../../config/constants";
 
 const { innerHeight } = window;
 

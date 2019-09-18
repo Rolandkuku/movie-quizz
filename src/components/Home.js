@@ -158,9 +158,8 @@ function HomeComponent({ history, onSetUserName, userName, onUnsetUserName }) {
             href="https://www.themoviedb.org"
             rel="noopener noreferrer"
             target="_blank"
-            // className={classes.tmdbLink}
           >
-            Data from the TMDB
+            Data from TMDB
           </a>
           {userName ? (
             <React.Fragment>

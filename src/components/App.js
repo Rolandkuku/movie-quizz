@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { HashRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 
-import { Game, Home, GameResume, Scores, Lobby } from "./";
+import { Home, GameResume, Scores, Lobby } from "./";
+import { Game } from "./game/";
 import "../styles/App.css";
 import { setName as setLocalName, getName, unsetName } from "../services";
 

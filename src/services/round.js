@@ -12,8 +12,16 @@ async function createNewRound(lobbyId: string, timer: number) {
       ? movie.cast[getRandomInt(10)]
       : await getRandPopularPerson();
     const round: Round = {
-      movie,
-      person,
+      movie: {
+        title: movie.title,
+        poster_path: movie.poster_path,
+        id: movie.id
+      },
+      person: {
+        name: person.name,
+        profile_path: person.profile_path,
+        id: person.id
+      },
       lobbyId,
       timer,
       timestamp: moment().format(),

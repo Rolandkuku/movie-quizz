@@ -1,7 +1,6 @@
 // @flow
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
-  Button,
   Typography,
   makeStyles,
   Table,
@@ -10,19 +9,18 @@ import {
   TableCell,
   TableHead
 } from "@material-ui/core";
-import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
-import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
 import { withRouter } from "react-router-dom";
 
-import { Timer, Poster } from ".";
+import { Timer } from "../ui";
+import { GuessAction } from "./GuessAction";
 import {
   getName,
   listenForLobbyChanges,
   roundServices,
   saveGame,
   saveGuess
-} from "../services";
+} from "../../services";
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -31,21 +29,6 @@ const useStyles = makeStyles(theme => ({
   },
   title: {
     textAlign: "center"
-  },
-  picturesContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  actionsContainer: {
-    display: "flex",
-    flexDirection: "row",
-    padding: theme.spacing(2),
-    justifyContent: "center"
-  },
-  action: {
-    margin: theme.spacing(2)
   },
   gameHUD: {
     display: "flex",
@@ -227,51 +210,12 @@ function GameComponent({ history, onSaveCurrentGame }) {
         </Typography>
       </div>
       <div className={classes.root}>
-        <div>
-          <div className={classes.picturesContainer}>
-            <Poster
-              loading={lobbyLoading}
-              path={currentRound ? currentRound.person.profile_path : null}
-              name={currentRound ? currentRound.person.name : null}
-            />
-            <Typography variant="h2">?</Typography>
-            <Poster
-              loading={lobbyLoading}
-              path={currentRound ? currentRound.movie.poster_path : null}
-              name={currentRound ? currentRound.movie.title : null}
-            />
-          </div>
-          <div className={classes.actionsContainer}>
-            <Button
-              disabled={!shouldEnableButtons}
-              size="large"
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                if (!lobbyLoading) {
-                  onMakeAGuess(true);
-                }
-              }}
-              className={classes.action}
-            >
-              <CheckRoundedIcon />
-            </Button>
-            <Button
-              size="large"
-              variant="contained"
-              color="secondary"
-              onClick={() => {
-                if (!lobbyLoading) {
-                  onMakeAGuess(false);
-                }
-              }}
-              disabled={!shouldEnableButtons}
-              className={classes.action}
-            >
-              <CloseRoundedIcon />
-            </Button>
-          </div>
-        </div>
+        <GuessAction
+          round={currentRound}
+          loading={lobbyLoading}
+          shouldEnableButtons={shouldEnableButtons}
+          onMakeAGuess={onMakeAGuess}
+        />
         <div>
           <Table>
             <TableHead>

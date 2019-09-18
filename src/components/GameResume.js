@@ -11,7 +11,7 @@ import {
 } from "@material-ui/core";
 import { withRouter } from "react-router-dom";
 
-import { Timer } from ".";
+import { Timer } from "./ui";
 import {
   getGame as _getGame,
   getName as _getName,

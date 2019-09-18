@@ -7,6 +7,7 @@ import {
   TableHead,
   TableRow,
   Button,
+  Paper,
   makeStyles
 } from "@material-ui/core";
 import { withRouter } from "react-router-dom";
@@ -22,6 +23,9 @@ import type { Guess } from "../types";
 const useStyles = makeStyles(theme => ({
   button: {
     margin: theme.spacing(2)
+  },
+  tableContainer: {
+    padding: theme.spacing(1)
   }
 }));
 
@@ -73,9 +77,7 @@ function GameResumeComponent({ history }) {
     return (
       <div>
         <h2>{`Winner: ${winner}`}</h2>
-        <h2>Your game:</h2>
-        <h2>{`Score: ${score}`}</h2>
-        <Timer>{guesses[0].time}</Timer>
+        <h2>{`Score: ${score} - Time: ${guesses[0].time}`}</h2>
         <Button
           color="primary"
           variant="contained"
@@ -84,32 +86,36 @@ function GameResumeComponent({ history }) {
         >
           Go home
         </Button>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Time</TableCell>
-              <TableCell>Person</TableCell>
-              <TableCell>Movie</TableCell>
-              <TableCell>Plays in</TableCell>
-              <TableCell>Guessed right</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {guesses.length
-              ? guesses.map((guess: Guess) => {
-                  return (
-                    <TableRow key={guess.roundIndex}>
-                      <TableCell>{guess.time}</TableCell>
-                      <TableCell>{guess.person.name}</TableCell>
-                      <TableCell>{guess.movie.title}</TableCell>
-                      <TableCell>{guess.playsIn ? "yes" : "no"}</TableCell>
-                      <TableCell>{guess.guessedRight ? "yes" : "no"}</TableCell>
-                    </TableRow>
-                  );
-                })
-              : null}
-          </TableBody>
-        </Table>
+        <Paper className={classes.tableContainer}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Time</TableCell>
+                <TableCell>Person</TableCell>
+                <TableCell>Movie</TableCell>
+                <TableCell>Plays in</TableCell>
+                <TableCell>Guessed right</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {guesses.length
+                ? guesses.map((guess: Guess) => {
+                    return (
+                      <TableRow key={guess.roundIndex}>
+                        <TableCell>{guess.time}</TableCell>
+                        <TableCell>{guess.person.name}</TableCell>
+                        <TableCell>{guess.movie.title}</TableCell>
+                        <TableCell>{guess.playsIn ? "yes" : "no"}</TableCell>
+                        <TableCell>
+                          {guess.guessedRight ? "yes" : "no"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                : null}
+            </TableBody>
+          </Table>
+        </Paper>
       </div>
     );
   }

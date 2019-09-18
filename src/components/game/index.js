@@ -1,6 +1,6 @@
 // @flow
 import React, { useState, useRef } from "react";
-import { Typography, makeStyles } from "@material-ui/core";
+import { Typography, makeStyles, Grid } from "@material-ui/core";
 
 import { withRouter } from "react-router-dom";
 
@@ -16,16 +16,10 @@ import {
 } from "../../services";
 
 const useStyles = makeStyles(theme => ({
-  root: {
-    display: "flex",
-    justifyContent: "space-around"
-  },
   title: {
     textAlign: "center"
   },
   gameHUD: {
-    display: "flex",
-    justifyContent: "space-between",
     padding: theme.spacing(2)
   }
 }));
@@ -76,9 +70,11 @@ function GameComponent({ history, onSaveCurrentGame }) {
       getName(),
       guessed,
       rounds.length > 0
-    ) && !loading;
+    ) &&
+    !loading &&
+    !guessed;
 
-  const checkGuessed = guesses => {
+  const checkGuessed = (guesses, nbRounds) => {
     setGuessed(
       guesses.filter(
         ({ userName, roundIndex }) =>
@@ -164,8 +160,8 @@ function GameComponent({ history, onSaveCurrentGame }) {
       // Update ui as soon as possible.
       setLobby(newLobby);
 
-      const { master, rounds, id, guesses } = newLobby;
-      checkGuessed(guesses);
+      const { master, rounds, id, guesses, nbRounds } = newLobby;
+      checkGuessed(guesses, nbRounds);
       const isMaster = master === getName();
       // Load first round if master.
       if (id && !rounds.length && isMaster) {
@@ -194,15 +190,19 @@ function GameComponent({ history, onSaveCurrentGame }) {
           <Timer>{time}</Timer>
         </Typography>
       </div>
-      <div className={classes.root}>
-        <GuessAction
-          round={currentRound}
-          loading={loading}
-          shouldEnableButtons={shouldEnableButtons}
-          onMakeAGuess={onMakeAGuess}
-        />
-        <Scores users={lobby.users} />
-      </div>
+      <Grid container justify="center">
+        <Grid item md={8}>
+          <GuessAction
+            round={currentRound}
+            loading={loading}
+            shouldEnableButtons={shouldEnableButtons}
+            onMakeAGuess={onMakeAGuess}
+          />
+        </Grid>
+        <Grid item sm={8} md={4}>
+          <Scores users={lobby.users} />
+        </Grid>
+      </Grid>
     </div>
   );
 }

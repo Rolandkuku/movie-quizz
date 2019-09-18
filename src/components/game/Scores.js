@@ -6,9 +6,18 @@ import {
   TableRow,
   TableBody,
   TableCell,
-  TableHead
+  TableHead,
+  Paper,
+  makeStyles
 } from "@material-ui/core";
+import { getName } from "../../services";
 import type { User } from "../../types";
+
+const useStyles = makeStyles(theme => ({
+  root: {
+    paddingBottom: theme.spacing(2)
+  }
+}));
 
 const renderLives = nbLives => {
   const hearts = [];
@@ -23,8 +32,10 @@ type Props = {
 };
 
 function Scores({ users }: Props) {
+  const classes = useStyles();
+  const userName = getName();
   return (
-    <div>
+    <Paper className={classes.root}>
       <Table>
         <TableHead>
           <TableRow>
@@ -35,8 +46,8 @@ function Scores({ users }: Props) {
         </TableHead>
         <TableBody>
           {users
-            ? users.map(user => (
-                <TableRow key={user.name}>
+            ? users.map((user, index) => (
+                <TableRow selected={user.name === userName} key={user.name}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.score}</TableCell>
                   <TableCell>{renderLives(user.lives)}</TableCell>
@@ -45,7 +56,7 @@ function Scores({ users }: Props) {
             : null}
         </TableBody>
       </Table>
-    </div>
+    </Paper>
   );
 }
 

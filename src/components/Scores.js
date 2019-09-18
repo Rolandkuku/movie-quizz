@@ -6,12 +6,23 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Button
+  Button,
+  Paper,
+  makeStyles
 } from "@material-ui/core";
 import moment from "moment";
 
 import { getGames } from "../services";
 import type { Game } from "../types";
+
+const useStyles = makeStyles(theme => ({
+  tableContainer: {
+    padding: theme.spacing(1)
+  },
+  button: {
+    margin: theme.spacing(2)
+  }
+}));
 
 async function fetchGames(setGames, setLoading, setError) {
   setLoading(true);
@@ -26,6 +37,7 @@ async function fetchGames(setGames, setLoading, setError) {
 }
 
 function Scores({ history }: { history: any }) {
+  const classes = useStyles();
   const [games, setGames]: [Array<Game>, any] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,29 +53,32 @@ function Scores({ history }: { history: any }) {
         color="primary"
         variant="contained"
         onClick={() => history.push("/")}
+        className={classes.button}
       >
         Go home
       </Button>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>#</TableCell>
-            <TableCell>User</TableCell>
-            <TableCell>Score</TableCell>
-            <TableCell>Date</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {games.map(({ id, winner, score, time, date }: Game, index) => (
-            <TableRow key={id}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{winner}</TableCell>
-              <TableCell>{score}</TableCell>
-              <TableCell>{moment(date).fromNow()}</TableCell>
+      <Paper className={classes.tableContainer}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>#</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Score</TableCell>
+              <TableCell>Date</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {games.map(({ id, winner, score, time, date }: Game, index) => (
+              <TableRow key={id}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{winner}</TableCell>
+                <TableCell>{score}</TableCell>
+                <TableCell>{moment(date).fromNow()}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
     </div>
   );
 }

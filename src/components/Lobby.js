@@ -10,12 +10,14 @@ import {
   ListItemSecondaryAction,
   Button,
   Typography,
-  makeStyles
+  makeStyles,
+  Grid,
+  Paper
 } from "@material-ui/core";
 import CheckRoundedIcon from "@material-ui/icons/CheckRounded";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 
-import { listenForLobbyChanges, setUserReady } from "../services";
+import { listenForLobbyChanges, setUserReady, getName } from "../services";
 import type { Lobby as LobbyType, User } from "../types";
 
 const useStyles = makeStyles(theme => ({
@@ -26,12 +28,13 @@ const useStyles = makeStyles(theme => ({
     marginBottom: theme.spacing(3)
   },
   listContainer: {
-    marginTop: theme.spacing(6),
-    display: "flex",
-    justifyContent: "center"
+    marginTop: theme.spacing(6)
   },
   list: {
-    flexGrow: 0.6
+    // flexGrow: 0.6
+  },
+  listTitle: {
+    margin: theme.spacing(1)
   }
 }));
 
@@ -47,13 +50,8 @@ function isEveryBodyReady(users: Array<User>): boolean {
   return users.length > 0 && users.every(user => user.ready);
 }
 
-function LobbyComponent({
-  history,
-  userName
-}: {
-  history: History,
-  userName: string
-}) {
+function LobbyComponent({ history }: { history: History }) {
+  const userName = getName();
   const classes = useStyles();
   const lobbyId = window.location.hash.split("/")[2];
   const [lobby, setLobby]: [LobbyType, any] = useState({
@@ -86,52 +84,63 @@ function LobbyComponent({
   const [btnLabel, setBtnLabel] = useState("Copy");
 
   return (
-    <div>
-      <Typography className={classes.title} variant="h2" align="center">
-        Lobby
-      </Typography>
-      <Typography align="center">
-        {`Invite friends with this link: ${link}`}
-        <Button
-          className={classes.button}
-          color="default"
-          variant="contained"
-          size="small"
-          onClick={async () => {
-            await navigator.clipboard.writeText(link);
-            setBtnLabel("Copied");
-          }}
-        >
-          {btnLabel}
-        </Button>
-      </Typography>
-      <div className={classes.listContainer}>
-        <List className={classes.list} subheader="Players">
-          {lobby.users
-            ? lobby.users.map(user => (
-                <ListItem key={user.name}>
-                  <ListItemIcon>
-                    {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
-                  </ListItemIcon>
-                  <ListItemText primary={user.name} />
-                  {userName === user.name ? (
-                    <ListItemSecondaryAction>
-                      <Button
-                        color={user.ready ? "default" : "primary"}
-                        disabled={loading}
-                        variant="contained"
-                        onClick={() => onSetReady(user.name, !user.ready)}
-                      >
-                        {user.ready ? "Not ready" : "Go !"}
-                      </Button>
-                    </ListItemSecondaryAction>
-                  ) : null}
-                </ListItem>
-              ))
-            : null}
-        </List>
-      </div>
-    </div>
+    <Grid container justify="center">
+      <Grid item sm={8}>
+        <Typography className={classes.title} variant="h2" align="center">
+          Lobby
+        </Typography>
+        <Typography align="center">
+          {`Invite friends with this link: ${link}`}
+          <Button
+            className={classes.button}
+            color="default"
+            variant="contained"
+            size="small"
+            onClick={async () => {
+              await navigator.clipboard.writeText(link);
+              setBtnLabel("Copied");
+            }}
+          >
+            {btnLabel}
+          </Button>
+        </Typography>
+      </Grid>
+      <Grid item sm={8} className={classes.listContainer}>
+        <Paper>
+          <List
+            className={classes.list}
+            subheader={
+              <Typography className={classes.listTitle} variant="subtitle1">
+                Player
+              </Typography>
+            }
+          >
+            {lobby.users
+              ? lobby.users.map(user => (
+                  <ListItem key={user.name}>
+                    <ListItemIcon>
+                      {user.ready ? <CheckRoundedIcon /> : <CloseRoundedIcon />}
+                    </ListItemIcon>
+                    <ListItemText primary={user.name} />
+                    {userName === user.name ? (
+                      <ListItemSecondaryAction>
+                        <Button
+                          color={user.ready ? "default" : "primary"}
+                          disabled={loading}
+                          variant="contained"
+                          onClick={() => onSetReady(user.name, !user.ready)}
+                        >
+                          {user.ready ? "Not ready" : "Go !"}
+                        </Button>
+                      </ListItemSecondaryAction>
+                    ) : null}
+                  </ListItem>
+                ))
+              : null}
+          </List>
+        </Paper>
+      </Grid>
+    </Grid>
   );
 }
 

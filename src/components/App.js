@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { HashRouter as Router, Route } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
+import { Container } from "@material-ui/core";
 
 import { Home, GameResume, Scores, Lobby } from "./";
 import { Game } from "./game/";
@@ -43,7 +44,7 @@ function App() {
     setLocalName(userName);
   };
   return (
-    <div>
+    <Container>
       <div className={classes.gradientBackground} />
       <div className={classes.root}>
         <Router>
@@ -58,22 +59,13 @@ function App() {
               />
             )}
           />
-          <Route
-            path="/game/:id"
-            component={() => <Game userName={userName} />}
-          />
-          <Route
-            path="/game-resume"
-            component={() => <GameResume userName={userName} />}
-          />
+          <Route path="/game/:id" component={Game} />
+          <Route path="/game-resume/:id" component={GameResume} />
           <Route path="/scores" component={Scores} />
-          <Route
-            path="/lobby/:id"
-            component={() => <Lobby userName={userName} />}
-          />
+          <Route path="/lobby/:id" component={Lobby} />
         </Router>
       </div>
-    </div>
+    </Container>
   );
 }
 

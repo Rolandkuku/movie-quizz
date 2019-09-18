@@ -1,5 +1,5 @@
 // @flow
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import { Typography, makeStyles } from "@material-ui/core";
 
 import { withRouter } from "react-router-dom";
@@ -38,11 +38,11 @@ const emptyLobby = {
   master: null
 };
 
-function canGuess(guesses = [], _userName, users) {
-  if (!users) {
+function canGuess(guesses = [], users, _userName, guessed, hasRounds) {
+  if (!hasRounds || !users.length) {
     return false;
   }
-  if (guesses.filter(({ userName }) => userName === _userName).length) {
+  if (guessed) {
     return false;
   }
   const user = users.find(({ name }) => name === _userName);
@@ -57,8 +57,9 @@ function GameComponent({ history, onSaveCurrentGame }) {
   if (!lobbyId) {
     history.push("/");
   }
-  const lobby = useRef(emptyLobby);
-  const loading = useRef(false);
+  const [lobby, setLobby] = useState(emptyLobby);
+  const [loading, setLoading] = useState(false);
+  const [guessed, setGuessed] = useState(false);
   const lobbyListener = useRef(null);
   const classes = useStyles();
   // Data for timer
@@ -66,24 +67,36 @@ function GameComponent({ history, onSaveCurrentGame }) {
   const [time, setTime] = useState(0);
 
   // Setup current round.
-  const { rounds, users, guesses, nbRounds } = lobby.current;
+  const { rounds, users, guesses, nbRounds } = lobby;
   const currentRound = rounds[nbRounds - 1];
   const shouldEnableButtons =
     canGuess(
       guesses.filter(guess => guess.roundIndex === nbRounds),
+      users,
       getName(),
-      users
-    ) && !loading.current;
+      guessed,
+      rounds.length > 0
+    ) && !loading;
+
+  const checkGuessed = guesses => {
+    setGuessed(
+      guesses.filter(
+        ({ userName, roundIndex }) =>
+          userName === getName() && roundIndex === nbRounds
+      ).length > 0
+    );
+  };
 
   // Save guess if correct.
   function onMakeAGuess(guess: boolean) {
     const userName = getName();
+    setGuessed(true);
     if (
-      !lobby.current.guesses
-        .filter(guess => guess.roundIndex === lobby.current.nbRounds)
+      !lobby.guesses
+        .filter(guess => guess.roundIndex === lobby.nbRounds)
         .some(guess => guess.userName === userName)
     ) {
-      const { nbRounds, rounds } = lobby.current;
+      const { nbRounds, rounds } = lobby;
       const round = rounds[nbRounds - 1];
       const { playsIn, date } = round;
       const guessedRight = guess === playsIn;
@@ -96,7 +109,7 @@ function GameComponent({ history, onSaveCurrentGame }) {
           person: currentRound.person,
           playsIn,
           time,
-          roundIndex: lobby.current.nbRounds
+          roundIndex: lobby.nbRounds
         },
         date
       );
@@ -104,14 +117,14 @@ function GameComponent({ history, onSaveCurrentGame }) {
   }
 
   const getNextRound = async () => {
-    loading.current = true;
+    setLoading(true);
     await roundServices.createNewRound(lobbyId, time);
-    loading.current = false;
+    setLoading(false);
   };
 
   // Create a new round if needed.
-  const checkForNewRound = () => {
-    const { users, guesses, nbRounds } = lobby.current;
+  const checkForNewRound = lobby => {
+    const { users, guesses, nbRounds } = lobby;
     const nbUsersAlive = users.filter(user => user.lives > 0).length;
     if (
       guesses.filter(guess => guess.roundIndex === nbRounds).length ===
@@ -124,12 +137,13 @@ function GameComponent({ history, onSaveCurrentGame }) {
   };
 
   // End game if needed
-  const checkForEndGame = async () => {
-    const { users } = lobby.current;
+  const checkForEndGame = async lobby => {
+    const { users } = lobby;
     const isMulti = users.length > 1;
-    const nbPlayerAlive = users.filter(user => user.lives > 0).length;
+    const playersAlive = users.filter(user => user.lives > 0);
+    const nbPlayerAlive = playersAlive.length;
     if ((isMulti && nbPlayerAlive === 1) || (!isMulti && nbPlayerAlive === 0)) {
-      const winner = isMulti ? users.find(user => user.lives > 0) : users[0];
+      const winner = isMulti ? playersAlive[0] : users[0];
       const user = users.find(user => user.name === getName());
       if (winner && user) {
         const game = await saveGame({
@@ -148,31 +162,30 @@ function GameComponent({ history, onSaveCurrentGame }) {
   if (!lobbyListener.current) {
     lobbyListener.current = listenForLobbyChanges(lobbyId, newLobby => {
       // Update ui as soon as possible.
-      console.log(newLobby);
-      const { master, rounds, id } = newLobby;
-      lobby.current = newLobby;
-      const isMaster = lobby.current && master === getName();
+      setLobby(newLobby);
+
+      const { master, rounds, id, guesses } = newLobby;
+      checkGuessed(guesses);
+      const isMaster = master === getName();
       // Load first round if master.
       if (id && !rounds.length && isMaster) {
         getNextRound();
       }
       // Check for a new round if master
       if (rounds.length && isMaster) {
-        checkForNewRound();
+        checkForNewRound(newLobby);
       }
       // Always check for the end of the game.
-      checkForEndGame();
+      checkForEndGame(newLobby);
     });
   }
 
   // Timer logic
-  useEffect(() => {
-    if (!intervalId.current) {
-      intervalId.current = setInterval(() => {
-        setTime(t => t + 1);
-      }, 1000);
-    }
-  });
+  if (!intervalId.current) {
+    intervalId.current = setInterval(() => {
+      setTime(t => t + 1);
+    }, 1000);
+  }
 
   return (
     <div>
@@ -184,11 +197,11 @@ function GameComponent({ history, onSaveCurrentGame }) {
       <div className={classes.root}>
         <GuessAction
           round={currentRound}
-          loading={loading.current}
+          loading={loading}
           shouldEnableButtons={shouldEnableButtons}
           onMakeAGuess={onMakeAGuess}
         />
-        <Scores users={lobby.current.users} />
+        <Scores users={lobby.users} />
       </div>
     </div>
   );

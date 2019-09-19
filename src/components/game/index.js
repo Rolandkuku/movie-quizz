@@ -122,12 +122,9 @@ function GameComponent({ history, onSaveCurrentGame }) {
   const checkForNewRound = lobby => {
     const { users, guesses, nbRounds } = lobby;
     const nbUsersAlive = users.filter(user => user.lives > 0).length;
-    if (
-      guesses.filter(guess => guess.roundIndex === nbRounds).length ===
-        nbUsersAlive &&
-      users.length > 0 &&
-      guesses.length > 0
-    ) {
+    const nbGuesses = guesses.filter(guess => guess.roundIndex === nbRounds)
+      .length;
+    if (nbGuesses >= nbUsersAlive && users.length > 0 && guesses.length > 0) {
       getNextRound();
     }
   };
